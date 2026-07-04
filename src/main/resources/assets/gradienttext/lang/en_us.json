@@ -1,0 +1,11 @@
+{
+  "itemGroup.gradienttext": "Gradient Text Plugin",
+  "container.gradienttext.gradient": "Gradient Configuration",
+  "commands.gradient.apply": "Gradient applied!",
+  "commands.gradient.remove": "Gradient removed!",
+  "commands.gradient.info": "Gradient Info",
+  "commands.gradient.no_item": "Hold an item to apply gradient!",
+  "commands.gradient.no_gradient": "This item has no gradient!",
+  "gradienttext.direction.horizontal": "Horizontal",
+  "gradienttext.direction.vertical": "Vertical"
+}

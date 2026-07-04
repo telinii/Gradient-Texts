@@ -1,0 +1,30 @@
+# Compiled files
+build/
+out/
+*.class
+
+# Gradle
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+
+# Minecraft
+run/
+runs/
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Forge
+src/generated/
