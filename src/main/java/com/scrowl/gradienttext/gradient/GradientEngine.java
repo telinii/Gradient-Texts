@@ -62,19 +62,20 @@ public class GradientEngine {
 
         float timeOffset = (timeMs * speed * 0.01f) % 1.0f;
         int color = interpolateColor(colors, timeOffset);
+        Style sharedStyle = makeStyle(color, bold);
 
         MutableComponent result = Component.literal("");
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
-            result.append(Component.literal(String.valueOf(c)).withStyle(makeStyle(color, bold)));
+            result.append(Component.literal(String.valueOf(c)).withStyle(sharedStyle));
         }
 
         return result;
     }
 
     private static Style makeStyle(int color, boolean bold) {
-        TextColor textColor = TextColor.parseColor(String.format("#%06X", color));
-        Style style = Style.EMPTY.withColor(textColor);
+        TextColor textColor = TextColor.fromRgb(color);
+        Style style = Style.EMPTY.withColor(textColor).withItalic(false);
         if (bold) {
             style = style.withBold(true);
         }
@@ -119,25 +120,48 @@ public class GradientEngine {
 
         switch (str) {
             case "black": return 0x000000;
-            case "dark_blue": case "darkblue": return 0x0000AA;
-            case "dark_green": case "darkgreen": return 0x00AA00;
-            case "dark_aqua": case "darkaqua": return 0x00AAAA;
-            case "dark_red": case "darkred": return 0xAA0000;
-            case "dark_purple": case "darkpurple": return 0xAA00AA;
-            case "gold": return 0xFFAA00;
-            case "gray": case "grey": return 0xAAAAAA;
-            case "dark_gray": case "darkgrey": case "darkgray": return 0x555555;
+            case "dark_blue": case "darkblue": case "navy": return 0x0000AA;
+            case "dark_green": case "darkgreen": case "forest": return 0x00AA00;
+            case "dark_aqua": case "darkaqua": case "teal": return 0x00AAAA;
+            case "dark_red": case "darkred": case "maroon": case "crimson": case "ruby": return 0xAA0000;
+            case "dark_purple": case "darkpurple": case "indigo": return 0xAA00AA;
+            case "gold": case "gold_dark": return 0xFFAA00;
+            case "gold_light": return 0xFFD700;
+            case "gray": case "grey": case "silver": return 0xAAAAAA;
+            case "dark_gray": case "darkgrey": case "darkgray": case "charcoal": return 0x555555;
             case "blue": return 0x5555FF;
-            case "green": return 0x55FF55;
-            case "aqua": case "cyan": return 0x55FFFF;
+            case "green": case "lime": return 0x55FF55;
+            case "aqua": case "cyan": case "sky": return 0x55FFFF;
+            case "aqua_dark": return 0x00AAAA;
+            case "aqua_light": return 0x7FFFD4;
             case "red": return 0xFF5555;
-            case "light_purple": case "lightpurple": case "magenta": return 0xFF55FF;
+            case "light_purple": case "lightpurple": case "magenta": case "violet": return 0xFF55FF;
             case "yellow": return 0xFFFF55;
-            case "white": return 0xFFFFFF;
-            case "orange": return 0xFF5500;
-            case "pink": return 0xFFAACC;
-            case "brown": return 0x8B4513;
+            case "white": case "ivory": case "beige": return 0xFFFFFF;
+            case "orange": case "coral": case "peach": return 0xFF5500;
+            case "pink": case "salmon": case "apricot": return 0xFFAACC;
+            case "brown": case "bronze": case "copper": return 0x8B4513;
             case "purple": return 0x800080;
+            case "olive": return 0x808000;
+            case "cherry": case "wine": return 0xDC143C;
+            case "emerald": return 0x50C878;
+            case "jade": return 0x00A86B;
+            case "mint": return 0x98FF98;
+            case "lavender": return 0xE6E6FA;
+            case "rose": return 0xFF007F;
+            case "neon_green": return 0x39FF14;
+            case "neon_blue": return 0x1F51FF;
+            case "neon_pink": return 0xFF6EC7;
+            case "neon_yellow": return 0xDFFF00;
+            case "pastel_red": return 0xFFB3BA;
+            case "pastel_blue": return 0xBAE1FF;
+            case "pastel_green": return 0xBAFFC9;
+            case "pastel_yellow": return 0xFFFFBA;
+            case "pastel_pink": return 0xFFDFBA;
+            case "pastel_purple": return 0xE8BAFF;
+            case "pastel_cyan": return 0xBAFFFF;
+            case "pastel_orange": return 0xFFD8BA;
+            case "turquoise": return 0x40E0D0;
             default: break;
         }
 

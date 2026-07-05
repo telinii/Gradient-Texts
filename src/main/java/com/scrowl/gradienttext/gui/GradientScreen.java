@@ -44,6 +44,8 @@ public class GradientScreen extends Screen {
         presetColors.add(new int[]{0xFF0000, 0xFFAA00, 0xFFFF00});
         presetColors.add(new int[]{0xFF0000, 0xFF00FF, 0x0000FF, 0x00FFFF});
         presetColors.add(new int[]{0xFF5500, 0xFF55FF, 0x55FFFF, 0x55FF55});
+        presetColors.add(new int[]{0xFF0000, 0xFF5500, 0xFFFF00, 0x55FF55, 0x5555FF, 0xAA00FF});
+        presetColors.add(new int[]{0xFF0000, 0xFFAA00, 0xFFFF00, 0x55FF55, 0x00FFFF, 0x5555FF});
     }
 
     @Override
@@ -158,9 +160,11 @@ public class GradientScreen extends Screen {
         }
 
         Component label = Component.literal("Preview:");
+        guiGraphics.fill(previewX, previewY - 12, previewX + 50, previewY - 2, 0xFF000000);
         guiGraphics.drawString(this.font, label, previewX, previewY - 10, 0xFFFFFF);
 
         String currentMode = menu.getCurrentMode().getDisplayName();
+        guiGraphics.fill(previewX, previewY + previewH + 3, previewX + 80, previewY + previewH + 15, 0xFF000000);
         guiGraphics.drawString(this.font, Component.literal("Mode: " + currentMode), previewX, previewY + previewH + 5, 0xFFFFFF);
     }
 

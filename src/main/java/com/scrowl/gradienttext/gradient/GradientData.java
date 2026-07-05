@@ -13,7 +13,6 @@ public class GradientData {
     public static final String SPEED_KEY = "Speed";
     public static final String ORIGINAL_NAME_KEY = "OriginalName";
 
-    public static final int MAX_COLORS = 4;
     public static final float MIN_SPEED = 0.1f;
     public static final float MAX_SPEED = 10.0f;
     public static final float DEFAULT_SPEED = 1.0f;

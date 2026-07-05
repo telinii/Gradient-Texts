@@ -48,10 +48,11 @@ public class AnimationHandler {
         CompoundTag tag = stack.getTag();
         if (tag == null) return;
 
-        GradientData data = GradientData.fromItemStack(stack);
-        if (data == null) return;
+        CompoundTag gradientTag = tag.getCompound("GradientText");
+        if (gradientTag.isEmpty()) return;
 
-        if (data.getMode() == GradientMode.STATIC) return;
+        String modeStr = gradientTag.contains("Mode") ? gradientTag.getString("Mode") : "static";
+        if (modeStr.equals("static")) return;
 
         String originalName = tag.getString("OriginalName");
         if (originalName.isEmpty()) {
@@ -59,22 +60,25 @@ public class AnimationHandler {
             tag.putString("OriginalName", originalName);
         }
 
+        GradientData data = GradientData.fromItemStack(stack);
+        if (data == null) return;
+
         float speed = data.getSpeed();
         Component gradientName;
 
-        if (data.getMode() == GradientMode.SMOOTH) {
-            gradientName = GradientEngine.applySmoothTransition(
-                    originalName,
-                    data.getColors(),
-                    data.isBold(),
-                    animationTime,
-                    speed
-            );
-        } else if (data.getMode() == GradientMode.DYNAMIC) {
+        if (data.getMode() == GradientMode.DYNAMIC) {
             gradientName = GradientEngine.applyAnimatedGradient(
                     originalName,
                     data.getColors(),
                     data.getDirection(),
+                    data.isBold(),
+                    animationTime,
+                    speed
+            );
+        } else if (data.getMode() == GradientMode.SMOOTH) {
+            gradientName = GradientEngine.applySmoothTransition(
+                    originalName,
+                    data.getColors(),
                     data.isBold(),
                     animationTime,
                     speed

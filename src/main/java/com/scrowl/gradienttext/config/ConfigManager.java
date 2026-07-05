@@ -45,6 +45,18 @@ public class ConfigManager {
                 config.setSmoothGradient(root.get("smoothGradient").getAsBoolean());
             }
 
+            if (root.has("defaultToolGradients")) {
+                config.setDefaultToolGradients(root.get("defaultToolGradients").getAsBoolean());
+            }
+
+            if (root.has("defaultArmorGradients")) {
+                config.setDefaultArmorGradients(root.get("defaultArmorGradients").getAsBoolean());
+            }
+
+            if (root.has("defaultGradientMode")) {
+                config.setDefaultGradientMode(root.get("defaultGradientMode").getAsString());
+            }
+
             if (root.has("blacklistedItems")) {
                 JsonArray blacklist = root.getAsJsonArray("blacklistedItems");
                 for (JsonElement elem : blacklist) {
@@ -77,6 +89,9 @@ public class ConfigManager {
         try {
             JsonObject root = new JsonObject();
             root.addProperty("smoothGradient", config.isSmoothGradient());
+            root.addProperty("defaultToolGradients", config.isDefaultToolGradients());
+            root.addProperty("defaultArmorGradients", config.isDefaultArmorGradients());
+            root.addProperty("defaultGradientMode", config.getDefaultGradientMode());
 
             JsonArray blacklist = new JsonArray();
             for (String item : config.getBlacklistedItems()) {

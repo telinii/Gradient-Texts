@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.scrowl.gradienttext.config.ConfigManager;
+import com.scrowl.gradienttext.config.ConfigScreen;
 import com.scrowl.gradienttext.config.GradientConfig;
 import com.scrowl.gradienttext.gradient.GradientData;
 import com.scrowl.gradienttext.gradient.GradientDirection;
@@ -13,6 +14,7 @@ import com.scrowl.gradienttext.gradient.GradientMode;
 import com.scrowl.gradienttext.network.NetworkHandler;
 import com.scrowl.gradienttext.network.OpenConfigScreenPacket;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -22,76 +24,40 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.network.PacketDistributor;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class GradientCommand {
 
     @SubscribeEvent
     public static void onCommandsRegister(RegisterCommandsEvent event) {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
 
+        var speedArg = Commands.argument("speed", FloatArgumentType.floatArg(GradientData.MIN_SPEED, GradientData.MAX_SPEED))
+                .executes(ctx -> applyGradientFull(ctx));
+
+        var boldArg = Commands.argument("bold", StringArgumentType.word())
+                .suggests(ColorSuggestions.BOOLEANS)
+                .then(speedArg)
+                .executes(ctx -> applyGradientFull(ctx));
+
+        var modeArg = Commands.argument("mode", StringArgumentType.word())
+                .suggests(ColorSuggestions.MODES)
+                .then(boldArg)
+                .executes(ctx -> applyGradientFull(ctx));
+
+        var dirArg = Commands.argument("direction", StringArgumentType.word())
+                .suggests(ColorSuggestions.DIRECTIONS)
+                .then(modeArg)
+                .executes(ctx -> applyGradientFull(ctx));
+
+        var optionsNode = Commands.literal("options")
+                .then(dirArg);
+
+        var colorsArg = Commands.argument("colors", StringArgumentType.word())
+                .suggests(ColorSuggestions.COLORS)
+                .then(optionsNode)
+                .executes(ctx -> applyGradient(ctx));
+
         dispatcher.register(Commands.literal("gradient")
-                .then(Commands.argument("color1", StringArgumentType.word())
-                        .suggests(ColorSuggestions.COLORS)
-                        .executes(ctx -> applyGradient(ctx, 1))
-                        .then(Commands.argument("color2", StringArgumentType.word())
-                                .suggests(ColorSuggestions.COLORS)
-                                .executes(ctx -> applyGradient(ctx, 2))
-                                .then(Commands.argument("color3", StringArgumentType.word())
-                                        .suggests(ColorSuggestions.COLORS)
-                                        .executes(ctx -> applyGradient(ctx, 3))
-                                        .then(Commands.argument("color4", StringArgumentType.word())
-                                                .suggests(ColorSuggestions.COLORS)
-                                                .executes(ctx -> applyGradient(ctx, 4))
-                                                .then(Commands.literal("options")
-                                                        .then(Commands.argument("direction", StringArgumentType.word())
-                                                                .suggests(ColorSuggestions.DIRECTIONS)
-                                                                .executes(ctx -> applyGradientFull(ctx, 4))
-                                                                .then(Commands.argument("mode", StringArgumentType.word())
-                                                                        .suggests(ColorSuggestions.MODES)
-                                                                        .executes(ctx -> applyGradientFull(ctx, 4))
-                                                                        .then(Commands.argument("bold", StringArgumentType.word())
-                                                                                .suggests(ColorSuggestions.BOOLEANS)
-                                                                                .executes(ctx -> applyGradientFull(ctx, 4))
-                                                                                .then(Commands.argument("speed", FloatArgumentType.floatArg(GradientData.MIN_SPEED, GradientData.MAX_SPEED))
-                                                                                        .executes(ctx -> applyGradientFull(ctx, 4))))))))
-                                        .then(Commands.literal("options")
-                                                .then(Commands.argument("direction", StringArgumentType.word())
-                                                        .suggests(ColorSuggestions.DIRECTIONS)
-                                                        .executes(ctx -> applyGradientFull(ctx, 3))
-                                                        .then(Commands.argument("mode", StringArgumentType.word())
-                                                                .suggests(ColorSuggestions.MODES)
-                                                                .executes(ctx -> applyGradientFull(ctx, 3))
-                                                                .then(Commands.argument("bold", StringArgumentType.word())
-                                                                        .suggests(ColorSuggestions.BOOLEANS)
-                                                                        .executes(ctx -> applyGradientFull(ctx, 3))
-                                                                        .then(Commands.argument("speed", FloatArgumentType.floatArg(GradientData.MIN_SPEED, GradientData.MAX_SPEED))
-                                                                                .executes(ctx -> applyGradientFull(ctx, 3))))))))
-                                .then(Commands.literal("options")
-                                        .then(Commands.argument("direction", StringArgumentType.word())
-                                                .suggests(ColorSuggestions.DIRECTIONS)
-                                                .executes(ctx -> applyGradientFull(ctx, 2))
-                                                .then(Commands.argument("mode", StringArgumentType.word())
-                                                        .suggests(ColorSuggestions.MODES)
-                                                        .executes(ctx -> applyGradientFull(ctx, 2))
-                                                        .then(Commands.argument("bold", StringArgumentType.word())
-                                                                .suggests(ColorSuggestions.BOOLEANS)
-                                                                .executes(ctx -> applyGradientFull(ctx, 2))
-                                                                .then(Commands.argument("speed", FloatArgumentType.floatArg(GradientData.MIN_SPEED, GradientData.MAX_SPEED))
-                                                                        .executes(ctx -> applyGradientFull(ctx, 2))))))))
-                        .then(Commands.literal("options")
-                                .then(Commands.argument("direction", StringArgumentType.word())
-                                        .suggests(ColorSuggestions.DIRECTIONS)
-                                        .executes(ctx -> applyGradientFull(ctx, 1))
-                                        .then(Commands.argument("mode", StringArgumentType.word())
-                                                .suggests(ColorSuggestions.MODES)
-                                                .executes(ctx -> applyGradientFull(ctx, 1))
-                                                .then(Commands.argument("bold", StringArgumentType.word())
-                                                        .suggests(ColorSuggestions.BOOLEANS)
-                                                        .executes(ctx -> applyGradientFull(ctx, 1))
-                                                        .then(Commands.argument("speed", FloatArgumentType.floatArg(GradientData.MIN_SPEED, GradientData.MAX_SPEED))
-                                                                .executes(ctx -> applyGradientFull(ctx, 1))))))))
+                .then(colorsArg)
                 .then(Commands.literal("remove")
                         .executes(GradientCommand::removeGradient))
                 .then(Commands.literal("info")
@@ -111,7 +77,20 @@ public class GradientCommand {
         );
     }
 
-    private static int applyGradient(CommandContext<CommandSourceStack> ctx, int colorCount) {
+    private static int[] parseColorsArgument(String colorsStr) {
+        if (colorsStr == null || colorsStr.isEmpty()) return null;
+
+        String[] parts = colorsStr.split("-");
+        if (parts.length < 1) return null;
+
+        int[] colors = new int[parts.length];
+        for (int i = 0; i < parts.length; i++) {
+            colors[i] = GradientEngine.parseColor(parts[i].trim());
+        }
+        return colors;
+    }
+
+    private static int applyGradient(CommandContext<CommandSourceStack> ctx) {
         try {
             ServerPlayer player = ctx.getSource().getPlayerOrException();
             ItemStack heldItem = player.getMainHandItem();
@@ -121,9 +100,11 @@ public class GradientCommand {
                 return 0;
             }
 
-            int[] colors = new int[colorCount];
-            for (int i = 0; i < colorCount; i++) {
-                colors[i] = GradientEngine.parseColor(StringArgumentType.getString(ctx, "color" + (i + 1)));
+            String colorsStr = StringArgumentType.getString(ctx, "colors");
+            int[] colors = parseColorsArgument(colorsStr);
+            if (colors == null || colors.length < 2) {
+                ctx.getSource().sendFailure(Component.literal("Need 2+ colors separated by dashes!").withStyle(ChatFormatting.RED));
+                return 0;
             }
 
             GradientData data = new GradientData(colors, GradientDirection.HORIZONTAL, GradientMode.STATIC, false, 1.0f);
@@ -143,7 +124,7 @@ public class GradientCommand {
         }
     }
 
-    private static int applyGradientFull(CommandContext<CommandSourceStack> ctx, int colorCount) {
+    private static int applyGradientFull(CommandContext<CommandSourceStack> ctx) {
         try {
             ServerPlayer player = ctx.getSource().getPlayerOrException();
             ItemStack heldItem = player.getMainHandItem();
@@ -153,9 +134,11 @@ public class GradientCommand {
                 return 0;
             }
 
-            int[] colors = new int[colorCount];
-            for (int i = 0; i < colorCount; i++) {
-                colors[i] = GradientEngine.parseColor(StringArgumentType.getString(ctx, "color" + (i + 1)));
+            String colorsStr = StringArgumentType.getString(ctx, "colors");
+            int[] colors = parseColorsArgument(colorsStr);
+            if (colors == null || colors.length < 2) {
+                ctx.getSource().sendFailure(Component.literal("Need 2+ colors separated by dashes!").withStyle(ChatFormatting.RED));
+                return 0;
             }
 
             GradientDirection dir = GradientDirection.HORIZONTAL;
@@ -195,12 +178,13 @@ public class GradientCommand {
 
     private static int openConfig(CommandContext<CommandSourceStack> ctx) {
         try {
-            ServerPlayer player = ctx.getSource().getPlayerOrException();
-            NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenConfigScreenPacket());
             ctx.getSource().sendSuccess(() -> Component.literal("Opening config GUI...").withStyle(ChatFormatting.GREEN), false);
+            Minecraft.getInstance().tell(() -> {
+                Minecraft.getInstance().setScreen(new ConfigScreen(Minecraft.getInstance().screen));
+            });
             return 1;
-        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
-            ctx.getSource().sendFailure(Component.literal("Must be run by a player!").withStyle(ChatFormatting.RED));
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(Component.literal("Error: " + e.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -281,13 +265,13 @@ public class GradientCommand {
 
     private static int showHelp(CommandContext<CommandSourceStack> ctx) {
         ctx.getSource().sendSuccess(() -> Component.literal("Gradient Commands:").withStyle(ChatFormatting.AQUA), false);
-        ctx.getSource().sendSuccess(() -> Component.literal("  /gradient <color1> [color2] [color3] [color4]").withStyle(ChatFormatting.WHITE), false);
+        ctx.getSource().sendSuccess(() -> Component.literal("  /gradient <colors>").withStyle(ChatFormatting.WHITE), false);
         ctx.getSource().sendSuccess(() -> Component.literal("  /gradient <colors> options <dir> <mode> <bold> <speed>").withStyle(ChatFormatting.WHITE), false);
         ctx.getSource().sendSuccess(() -> Component.literal("").withStyle(ChatFormatting.GRAY), false);
         ctx.getSource().sendSuccess(() -> Component.literal("Examples:").withStyle(ChatFormatting.YELLOW), false);
-        ctx.getSource().sendSuccess(() -> Component.literal("  /gradient red blue").withStyle(ChatFormatting.YELLOW), false);
-        ctx.getSource().sendSuccess(() -> Component.literal("  /gradient red yellow green blue").withStyle(ChatFormatting.YELLOW), false);
-        ctx.getSource().sendSuccess(() -> Component.literal("  /gradient red blue options vertical dynamic true 2.0").withStyle(ChatFormatting.YELLOW), false);
+        ctx.getSource().sendSuccess(() -> Component.literal("  /gradient red-blue").withStyle(ChatFormatting.YELLOW), false);
+        ctx.getSource().sendSuccess(() -> Component.literal("  /gradient red-yellow-green-blue").withStyle(ChatFormatting.YELLOW), false);
+        ctx.getSource().sendSuccess(() -> Component.literal("  /gradient red-blue options vertical dynamic true 2.0").withStyle(ChatFormatting.YELLOW), false);
         ctx.getSource().sendSuccess(() -> Component.literal("").withStyle(ChatFormatting.GRAY), false);
         ctx.getSource().sendSuccess(() -> Component.literal("  /gradient remove - Remove gradient").withStyle(ChatFormatting.WHITE), false);
         ctx.getSource().sendSuccess(() -> Component.literal("  /gradient info - Show info").withStyle(ChatFormatting.WHITE), false);
@@ -295,7 +279,7 @@ public class GradientCommand {
         ctx.getSource().sendSuccess(() -> Component.literal("  /gradient reload - Reload config from disk").withStyle(ChatFormatting.WHITE), false);
         ctx.getSource().sendSuccess(() -> Component.literal("  /gradient help - Show help").withStyle(ChatFormatting.WHITE), false);
         ctx.getSource().sendSuccess(() -> Component.literal("").withStyle(ChatFormatting.GRAY), false);
-        ctx.getSource().sendSuccess(() -> Component.literal("Colors: red, blue, #FF5500, 255,85,0").withStyle(ChatFormatting.GRAY), false);
+        ctx.getSource().sendSuccess(() -> Component.literal("Colors: red-blue-#FF5500 (dash-separated, 2+ colors)").withStyle(ChatFormatting.GRAY), false);
         ctx.getSource().sendSuccess(() -> Component.literal("Options: horizontal/vertical, static/dynamic/smooth, true/false, 0.1-10.0").withStyle(ChatFormatting.GRAY), false);
         return 1;
     }

@@ -14,8 +14,11 @@ import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.List;
+import java.util.WeakHashMap;
 
 public class GradientEventHandler {
+
+    private static final WeakHashMap<ItemStack, List<Component>> loreCache = new WeakHashMap<>();
 
     @SubscribeEvent
     public void onItemTooltip(ItemTooltipEvent event) {
@@ -41,7 +44,8 @@ public class GradientEventHandler {
 
                 for (int i = 0; i < loreTag.size() && loreIndex < tooltip.size(); i++) {
                     try {
-                        Component loreLine = Component.Serializer.fromJson(loreTag.getString(i));
+                        String loreStr = loreTag.getString(i);
+                        Component loreLine = Component.Serializer.fromJson(loreStr);
                         if (loreLine != null) {
                             String loreText = loreLine.getString();
                             if (!loreText.isEmpty()) {

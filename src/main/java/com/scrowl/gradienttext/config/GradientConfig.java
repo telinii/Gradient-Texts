@@ -10,14 +10,40 @@ public class GradientConfig {
     private static GradientConfig INSTANCE = new GradientConfig();
 
     private boolean smoothGradient = true;
+    private boolean defaultToolGradients = false;
+    private boolean defaultArmorGradients = false;
+    private String defaultGradientMode = "static";
     private Set<String> blacklistedItems = new HashSet<>();
     private Map<String, ItemGradientEntry> forcedGradients = new LinkedHashMap<>();
+
+    public static final int[] WOOD_COLORS = new int[]{0x8B4513, 0xFF8C00};
+    public static final int[] STONE_COLORS = new int[]{0x808080, 0xD3D3D3};
+    public static final int[] IRON_COLORS = new int[]{0xFFFFFF, 0x87CEEB};
+    public static final int[] GOLD_COLORS = new int[]{0xFFD700, 0xFFA500};
+    public static final int[] DIAMOND_COLORS = new int[]{0x00FFFF, 0xADD8E6};
+    public static final int[] NETHERITE_COLORS = new int[]{0x555555, 0x8B0000};
+
+    public static final int[] LEATHER_ARMOR_COLORS = new int[]{0x8B4513, 0xCD853F};
+    public static final int[] CHAIN_ARMOR_COLORS = new int[]{0x999999, 0xCCCCCC};
+    public static final int[] IRON_ARMOR_COLORS = new int[]{0xCCCCCC, 0xF0F0F0};
+    public static final int[] GOLD_ARMOR_COLORS = new int[]{0xFFD700, 0xFFEC8B};
+    public static final int[] DIAMOND_ARMOR_COLORS = new int[]{0x00CED1, 0x7FFFD4};
+    public static final int[] NETHERITE_ARMOR_COLORS = new int[]{0x555555, 0x8B0000};
 
     public static GradientConfig get() { return INSTANCE; }
     public static void set(GradientConfig config) { INSTANCE = config; }
 
     public boolean isSmoothGradient() { return smoothGradient; }
     public void setSmoothGradient(boolean smooth) { this.smoothGradient = smooth; }
+
+    public boolean isDefaultToolGradients() { return defaultToolGradients; }
+    public void setDefaultToolGradients(boolean enabled) { this.defaultToolGradients = enabled; }
+
+    public boolean isDefaultArmorGradients() { return defaultArmorGradients; }
+    public void setDefaultArmorGradients(boolean enabled) { this.defaultArmorGradients = enabled; }
+
+    public String getDefaultGradientMode() { return defaultGradientMode; }
+    public void setDefaultGradientMode(String mode) { this.defaultGradientMode = mode; }
 
     public Set<String> getBlacklistedItems() { return blacklistedItems; }
     public void setBlacklistedItems(Set<String> items) { this.blacklistedItems = items; }

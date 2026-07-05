@@ -33,8 +33,19 @@ public class ConfigScreen extends Screen {
     private Button editForcedBtn;
     private Button removeForcedBtn;
     private Button removeBlacklistBtn;
+    private Button boldBtn;
+    private Button toolGradientsBtn;
+    private Button armorGradientsBtn;
+    private Button modeStaticBtn;
+    private Button modeDynamicBtn;
+    private Button modeSmoothBtn;
     private Button saveBtn;
     private Button doneBtn;
+
+    private boolean currentBold = false;
+    private boolean currentToolGradients = false;
+    private boolean currentArmorGradients = false;
+    private String currentGradientMode = "static";
 
     private String statusMsg = "";
     private int statusColor = 0x55FF55;
@@ -99,31 +110,88 @@ public class ConfigScreen extends Screen {
         speedInput.setValue("1.0");
         addWidget(speedInput);
 
-        addForcedBtn = addRenderableWidget(new Button.Builder(
-                Component.literal("Add Forced"), b -> addForced()
-        ).pos(lx, 260).size(lw / 2 - 2, 18).build());
-
-        editForcedBtn = addRenderableWidget(new Button.Builder(
-                Component.literal("Edit"), b -> loadSelectedForced()
-        ).pos(lx + lw / 2 + 2, 260).size(lw / 2 - 2, 18).build());
-
-        addBlacklistBtn = addRenderableWidget(new Button.Builder(
-                Component.literal("Add Blacklist"), b -> addBlacklist()
-        ).pos(lx, 285).size(lw, 18).build());
+        boldBtn = addRenderableWidget(new Button.Builder(
+                Component.literal("Bold: OFF"), b -> {
+                    currentBold = !currentBold;
+                    b.setMessage(Component.literal("Bold: " + (currentBold ? "ON" : "OFF")));
+                }
+        ).pos(lx, 260).size(lw, 18).build());
 
         int rx = 220;
         int rw = 170;
 
+        toolGradientsBtn = addRenderableWidget(new Button.Builder(
+                Component.literal("Tool Gradients: OFF"), b -> {
+                    currentToolGradients = !currentToolGradients;
+                    b.setMessage(Component.literal("Tool Gradients: " + (currentToolGradients ? "ON" : "OFF")));
+                }
+        ).pos(rx, 55).size(rw, 18).build());
+
+        currentToolGradients = GradientConfig.get().isDefaultToolGradients();
+        toolGradientsBtn.setMessage(Component.literal("Tool Gradients: " + (currentToolGradients ? "ON" : "OFF")));
+
+        armorGradientsBtn = addRenderableWidget(new Button.Builder(
+                Component.literal("Armor Gradients: OFF"), b -> {
+                    currentArmorGradients = !currentArmorGradients;
+                    b.setMessage(Component.literal("Armor Gradients: " + (currentArmorGradients ? "ON" : "OFF")));
+                }
+        ).pos(rx, 78).size(rw, 18).build());
+
+        currentArmorGradients = GradientConfig.get().isDefaultArmorGradients();
+        armorGradientsBtn.setMessage(Component.literal("Armor Gradients: " + (currentArmorGradients ? "ON" : "OFF")));
+
+        int btnW = 55;
+        int btnY = 101;
+
+        modeStaticBtn = addRenderableWidget(new Button.Builder(
+                Component.literal("Static"), b -> {
+                    currentGradientMode = "static";
+                    updateModeButtons();
+                }
+        ).pos(rx, btnY).size(btnW, 18).build());
+
+        modeDynamicBtn = addRenderableWidget(new Button.Builder(
+                Component.literal("Dynamic"), b -> {
+                    currentGradientMode = "dynamic";
+                    updateModeButtons();
+                }
+        ).pos(rx + btnW + 2, btnY).size(btnW, 18).build());
+
+        modeSmoothBtn = addRenderableWidget(new Button.Builder(
+                Component.literal("Smooth"), b -> {
+                    currentGradientMode = "smooth";
+                    updateModeButtons();
+                }
+        ).pos(rx + (btnW + 2) * 2, btnY).size(btnW, 18).build());
+
+        currentGradientMode = GradientConfig.get().getDefaultGradientMode();
+        updateModeButtons();
+
+        addForcedBtn = addRenderableWidget(new Button.Builder(
+                Component.literal("Add Forced"), b -> addForced()
+        ).pos(lx, 280).size(lw / 2 - 2, 18).build());
+
+        editForcedBtn = addRenderableWidget(new Button.Builder(
+                Component.literal("Edit"), b -> loadSelectedForced()
+        ).pos(lx + lw / 2 + 2, 280).size(lw / 2 - 2, 18).build());
+
+        addBlacklistBtn = addRenderableWidget(new Button.Builder(
+                Component.literal("Add Blacklist"), b -> addBlacklist()
+        ).pos(lx, 305).size(lw, 18).build());
+
         removeForcedBtn = addRenderableWidget(new Button.Builder(
                 Component.literal("Remove Selected"), b -> removeForced()
-        ).pos(rx, 175).size(rw, 18).build());
+        ).pos(rx, 260).size(rw, 18).build());
 
         removeBlacklistBtn = addRenderableWidget(new Button.Builder(
                 Component.literal("Remove Selected"), b -> removeBlacklist()
-        ).pos(rx, 295).size(rw, 18).build());
+        ).pos(rx, 355).size(rw, 18).build());
 
         saveBtn = addRenderableWidget(new Button.Builder(
                 Component.literal("Save"), b -> {
+                    GradientConfig.get().setDefaultToolGradients(currentToolGradients);
+                    GradientConfig.get().setDefaultArmorGradients(currentArmorGradients);
+                    GradientConfig.get().setDefaultGradientMode(currentGradientMode);
                     ConfigManager.save();
                     statusMsg = "Saved!";
                     statusColor = 0x55FF55;
@@ -133,6 +201,12 @@ public class ConfigScreen extends Screen {
         doneBtn = addRenderableWidget(new Button.Builder(
                 CommonComponents.GUI_DONE, b -> minecraft.setScreen(parent)
         ).pos(lx, height - 26).size(lw, 18).build());
+    }
+
+    private void updateModeButtons() {
+        modeStaticBtn.setMessage(Component.literal("Static" + (currentGradientMode.equals("static") ? " *" : "")));
+        modeDynamicBtn.setMessage(Component.literal("Dynamic" + (currentGradientMode.equals("dynamic") ? " *" : "")));
+        modeSmoothBtn.setMessage(Component.literal("Smooth" + (currentGradientMode.equals("smooth") ? " *" : "")));
     }
 
     private void loadSelectedForced() {
@@ -156,6 +230,9 @@ public class ConfigScreen extends Screen {
         directionInput.setValue(entry.getDirection());
         modeInput.setValue(entry.getMode());
         speedInput.setValue(String.valueOf(entry.getSpeed()));
+
+        currentBold = entry.isBold();
+        boldBtn.setMessage(Component.literal("Bold: " + (currentBold ? "ON" : "OFF")));
 
         editingForced = true;
         editingItemId = itemId;
@@ -287,7 +364,7 @@ public class ConfigScreen extends Screen {
             GradientConfig.get().removeForcedGradient(editingItemId);
         }
 
-        GradientConfig.get().setForcedGradient(id, new GradientConfig.ItemGradientEntry(colors, dir, mode, false, speed, customName));
+        GradientConfig.get().setForcedGradient(id, new GradientConfig.ItemGradientEntry(colors, dir, mode, currentBold, speed, customName));
         refreshLists();
 
         editingForced = false;
@@ -359,19 +436,41 @@ public class ConfigScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
-        g.fill(0, 0, width, height, 0xC0000000);
+        if (itemIdInput == null || toolGradientsBtn == null) return;
+        g.fill(0, 0, width, height, 0xFF000000);
 
         String title = editingForced ? "EDIT GRADIENT" : "ADD GRADIENT";
+        g.fill(20, 18, 180, 30, 0xFF000000);
         g.drawString(font, title, 20, 20, editingForced ? 0xFFAA00 : 0x55FFFF, true);
+        g.fill(20, 41, 100, 52, 0xFF000000);
         g.drawString(font, "Item ID", 20, 43, 0xAAAAAA);
+        g.fill(20, 76, 130, 87, 0xFF000000);
         g.drawString(font, "Custom Name", 20, 78, 0xAAAAAA);
-        g.drawString(font, "Colors (up to 4)", 20, 113, 0xAAAAAA);
+        g.fill(20, 111, 170, 122, 0xFF000000);
+        g.drawString(font, "Colors (comma-separated)", 20, 113, 0xAAAAAA);
+        g.fill(20, 146, 100, 157, 0xFF000000);
         g.drawString(font, "Direction", 20, 148, 0xAAAAAA);
+        g.fill(20, 181, 70, 192, 0xFF000000);
         g.drawString(font, "Mode", 20, 183, 0xAAAAAA);
+        g.fill(20, 216, 70, 227, 0xFF000000);
         g.drawString(font, "Speed", 20, 218, 0xAAAAAA);
+        g.fill(20, 246, 60, 257, 0xFF000000);
+        g.drawString(font, "Bold", 20, 248, 0xAAAAAA);
 
-        g.drawString(font, "FORCED", 220, 20, 0xFFAA00, true);
-        int fy = 40;
+        g.fill(220, 18, 310, 30, 0xFF000000);
+        g.drawString(font, "TOOL GRADIENTS", 220, 20, 0x55FF55, true);
+        g.fill(220, 40, 350, 52, 0xFF000000);
+        g.drawString(font, "Auto-gradient tools", 220, 43, 0xAAAAAA);
+
+        g.fill(220, 100, 330, 112, 0xFF000000);
+        g.drawString(font, "ARMOR GRADIENTS", 220, 102, 0x55FFFF, true);
+
+        g.fill(220, 122, 250, 132, 0xFF000000);
+        g.drawString(font, "MODE", 220, 124, 0xFF55FF, true);
+
+        g.fill(220, 145, 280, 157, 0xFF000000);
+        g.drawString(font, "FORCED", 220, 147, 0xFFAA00, true);
+        int fy = 165;
         for (int i = 0; i < forcedList.size() && i < 6; i++) {
             int bg = (i == selForced) ? 0x605555FF : 0x30000000;
             g.fill(220, fy, 390, fy + 18, bg);
@@ -380,8 +479,9 @@ public class ConfigScreen extends Screen {
         }
         if (forcedList.isEmpty()) g.drawString(font, "(empty)", 224, fy + 4, 0x666666);
 
-        g.drawString(font, "BLACKLIST", 220, 195, 0xFF5555, true);
-        int by = 215;
+        g.fill(220, 250, 310, 262, 0xFF000000);
+        g.drawString(font, "BLACKLIST", 220, 252, 0xFF5555, true);
+        int by = 270;
         for (int i = 0; i < blacklistList.size() && i < 4; i++) {
             int bg = (i == selBlacklist) ? 0x60FF5555 : 0x30000000;
             g.fill(220, by, 390, by + 18, bg);
@@ -390,12 +490,12 @@ public class ConfigScreen extends Screen {
         }
         if (blacklistList.isEmpty()) g.drawString(font, "(empty)", 224, by + 4, 0x666666);
 
-        itemIdInput.render(g, mx, my, pt);
-        nameInput.render(g, mx, my, pt);
-        colorsInput.render(g, mx, my, pt);
-        directionInput.render(g, mx, my, pt);
-        modeInput.render(g, mx, my, pt);
-        speedInput.render(g, mx, my, pt);
+        if (itemIdInput != null) itemIdInput.render(g, mx, my, pt);
+        if (nameInput != null) nameInput.render(g, mx, my, pt);
+        if (colorsInput != null) colorsInput.render(g, mx, my, pt);
+        if (directionInput != null) directionInput.render(g, mx, my, pt);
+        if (modeInput != null) modeInput.render(g, mx, my, pt);
+        if (speedInput != null) speedInput.render(g, mx, my, pt);
 
         if (!currentSuggestions.isEmpty()) {
             int sx = 20;
@@ -410,7 +510,7 @@ public class ConfigScreen extends Screen {
             int sw = 170;
             int sh = currentSuggestions.size() * 16 + 4;
             g.fill(sx - 1, sy - 1, sx + sw + 1, sy + sh + 1, 0xFF555555);
-            g.fill(sx, sy, sx + sw, sy + sh, 0xF0101010);
+            g.fill(sx, sy, sx + sw, sy + sh, 0xFF101010);
             for (int i = 0; i < currentSuggestions.size(); i++) {
                 int y = sy + 2 + i * 16;
                 boolean selected = (i == sugSelectIndex);
@@ -420,7 +520,11 @@ public class ConfigScreen extends Screen {
             }
         }
 
-        if (!statusMsg.isEmpty()) g.drawString(font, statusMsg, 20, height - 68, statusColor);
+        if (!statusMsg.isEmpty()) {
+            g.fill(20, height - 70, 200, height - 64, 0xFF000000);
+            g.drawString(font, statusMsg, 20, height - 68, statusColor);
+        }
+        g.fill(20, height - 14, 250, height - 2, 0xFF000000);
         g.drawString(font, "Tab to cycle suggestions | Esc to cancel edit", 20, height - 12, 0x555555);
 
         super.render(g, mx, my, pt);
@@ -449,11 +553,11 @@ public class ConfigScreen extends Screen {
         }
         if (btn == 0) {
             for (int i = 0; i < forcedList.size() && i < 6; i++) {
-                int y = 40 + i * 20;
+                int y = 165 + i * 20;
                 if (mx >= 220 && mx <= 390 && my >= y && my <= y + 18) { selForced = i; selBlacklist = -1; return true; }
             }
             for (int i = 0; i < blacklistList.size() && i < 4; i++) {
-                int y = 215 + i * 20;
+                int y = 270 + i * 20;
                 if (mx >= 220 && mx <= 390 && my >= y && my <= y + 18) { selBlacklist = i; selForced = -1; return true; }
             }
         }
