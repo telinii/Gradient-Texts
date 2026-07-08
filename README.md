@@ -1,4 +1,15 @@
-# Gradient Texts - Update 1
+# Gradient Texts - Update 2
+
+## What's New
+
+### Apotheosis Compatibility
+- Fixed compatibility issues with Apotheosis mod
+- Resolved conflicts with item tooltip rendering
+- Gradients now work correctly alongside Apotheosis enchanting and spawner systems
+
+---
+
+# Update 1
 
 ## What's New
 
@@ -80,7 +91,7 @@
 ```bash
 git clone https://github.com/telinii/Gradient-Texts.git
 cd Gradient-Texts
-git checkout GTs-Update1
+git checkout GTs-Update2
 ./gradlew build
 ```
 
