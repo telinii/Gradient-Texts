@@ -51,33 +51,42 @@ public class ConfigHandler {
         if (GradientData.hasGradient(stack)) return;
 
         GradientConfig.ItemGradientEntry forced = GradientConfig.get().getForcedGradient(itemId);
-        GradientData data = null;
-        String customName = null;
 
         if (forced != null) {
-            data = forced.toGradientData();
-            customName = forced.hasCustomName() ? forced.getCustomName() : null;
-        } else if (GradientConfig.get().isDefaultToolGradients() && isTool(stack)) {
-            data = getDefaultToolGradient(stack);
-        } else if (GradientConfig.get().isDefaultArmorGradients() && isArmor(stack)) {
-            data = getDefaultArmorGradient(stack);
-        }
+            GradientData data = forced.toGradientData();
+            String customName = forced.hasCustomName() ? forced.getCustomName() : null;
 
-        if (data == null) return;
-
-        java.util.List<net.minecraft.network.chat.Component> tooltip = event.getToolTip();
-
-        if (!tooltip.isEmpty()) {
-            String nameText;
-            if (customName != null) {
-                nameText = customName;
-            } else {
-                nameText = tooltip.get(0).getString();
+            java.util.List<net.minecraft.network.chat.Component> tooltip = event.getToolTip();
+            if (!tooltip.isEmpty()) {
+                String nameText = customName != null ? customName : stack.getHoverName().getString();
+                if (!nameText.isEmpty()) {
+                    net.minecraft.network.chat.Component gradientName = data.applyGradient(nameText);
+                    tooltip.set(0, gradientName);
+                }
             }
-
-            if (!nameText.isEmpty()) {
-                net.minecraft.network.chat.Component gradientName = data.applyGradient(nameText);
-                tooltip.set(0, gradientName);
+        } else if (GradientConfig.get().isDefaultToolGradients() && isTool(stack)) {
+            GradientData data = getDefaultToolGradient(stack);
+            if (data != null) {
+                java.util.List<net.minecraft.network.chat.Component> tooltip = event.getToolTip();
+                if (!tooltip.isEmpty()) {
+                    String nameText = stack.getHoverName().getString();
+                    if (!nameText.isEmpty()) {
+                        net.minecraft.network.chat.Component gradientName = data.applyGradient(nameText);
+                        tooltip.set(0, gradientName);
+                    }
+                }
+            }
+        } else if (GradientConfig.get().isDefaultArmorGradients() && isArmor(stack)) {
+            GradientData data = getDefaultArmorGradient(stack);
+            if (data != null) {
+                java.util.List<net.minecraft.network.chat.Component> tooltip = event.getToolTip();
+                if (!tooltip.isEmpty()) {
+                    String nameText = stack.getHoverName().getString();
+                    if (!nameText.isEmpty()) {
+                        net.minecraft.network.chat.Component gradientName = data.applyGradient(nameText);
+                        tooltip.set(0, gradientName);
+                    }
+                }
             }
         }
     }
