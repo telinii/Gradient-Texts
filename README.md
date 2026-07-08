@@ -1,17 +1,15 @@
-# Gradient Texts - Update 2
+# Gradient Texts
 
-## What's New
+A Minecraft Forge 1.20.1 mod that adds beautiful gradient color effects to item names and tooltips.
+
+## What's New (Update 2)
 
 ### Apotheosis Compatibility
 - Fixed compatibility issues with Apotheosis mod
 - Resolved conflicts with item tooltip rendering
 - Gradients now work correctly alongside Apotheosis enchanting and spawner systems
 
----
-
-# Update 1
-
-## What's New
+## Features
 
 ### Default Tool Gradients
 - Auto-applies gradients to all tools in your inventory
@@ -40,24 +38,19 @@
 - **Dynamic**: Gradient scrolls through colors over time
 - **Smooth (Lethality)**: All characters share one color that pulses through the palette
 
-### Config GUI Updates
+### Config GUI
 - "Tool Gradients" toggle button (top-right)
 - "Armor Gradients" toggle button (below Tool Gradients)
 - Mode selector buttons (Static / Dynamic / Smooth) with active indicator (`*`)
 - Opaque backgrounds on all text labels and suggestion dropdowns
 
-### Command Updates
-- Color separator changed from `,` to `-` (e.g., `/gradient red-blue-yellow`)
-- `/gradient config` now opens the GUI directly (no network packet needed)
-- Fixed italic text issue — gradients no longer apply italic formatting
-
 ### Expanded Color Support
-- Removed MAX_COLORS limit — unlimited colors per gradient
-- 68+ named colors added (navy, teal, coral, neon, pastel, etc.)
-- Creative inventory items now show gradient on tooltip
+- 68+ named colors (navy, teal, coral, neon, pastel, etc.)
+- Unlimited colors per gradient
+- Creative inventory items show gradient on tooltip
 
 ### Performance Optimizations
-- `TextColor.fromRgb()` instead of `String.format()` + `TextColor.parseColor()`
+- `TextColor.fromRgb()` for faster rendering
 - Early NBT checks before full gradient data parse
 - Shared Style object for smooth mode characters
 - Lore caching with WeakHashMap in tooltip handler
