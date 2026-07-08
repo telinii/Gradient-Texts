@@ -1,6 +1,8 @@
-# Gradient Texts
+# Gradient Texts v1.0.2
 
 A Minecraft Forge 1.20.1 mod that adds beautiful gradient color effects to item names and tooltips.
+
+**Download**: [Latest Release](https://github.com/telinii/Gradient-Texts/releases/tag/v1.0.2)
 
 ## What's New (Update 2)
 
