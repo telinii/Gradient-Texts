@@ -53,6 +53,10 @@ public class ConfigManager {
                 config.setDefaultArmorGradients(root.get("defaultArmorGradients").getAsBoolean());
             }
 
+            if (root.has("gradientGlowEnabled")) {
+                config.setGradientGlowEnabled(root.get("gradientGlowEnabled").getAsBoolean());
+            }
+
             if (root.has("defaultGradientMode")) {
                 config.setDefaultGradientMode(root.get("defaultGradientMode").getAsString());
             }
@@ -91,6 +95,7 @@ public class ConfigManager {
             root.addProperty("smoothGradient", config.isSmoothGradient());
             root.addProperty("defaultToolGradients", config.isDefaultToolGradients());
             root.addProperty("defaultArmorGradients", config.isDefaultArmorGradients());
+            root.addProperty("gradientGlowEnabled", config.isGradientGlowEnabled());
             root.addProperty("defaultGradientMode", config.getDefaultGradientMode());
 
             JsonArray blacklist = new JsonArray();

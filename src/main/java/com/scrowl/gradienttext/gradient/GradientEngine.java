@@ -82,6 +82,10 @@ public class GradientEngine {
         return style;
     }
 
+    public static int getInterpolatedColor(int[] colors, float ratio) {
+        return interpolateColor(colors, ratio);
+    }
+
     private static int interpolateColor(int[] colors, float ratio) {
         if (colors.length == 1) return colors[0];
 
