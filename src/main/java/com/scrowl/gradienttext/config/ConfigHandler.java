@@ -50,41 +50,50 @@ public class ConfigHandler {
         if (GradientConfig.get().isItemBlacklisted(itemId)) return;
         if (GradientData.hasGradient(stack)) return;
 
-        GradientConfig.ItemGradientEntry forced = GradientConfig.get().getForcedGradient(itemId);
-        GradientData data = null;
-        String customName = null;
+        GradientConfig.ItemGradientEntry forced = GradientConfig.get().getItem(itemId);
 
         if (forced != null) {
-            data = forced.toGradientData();
-            customName = forced.hasCustomName() ? forced.getCustomName() : null;
-        } else if (GradientConfig.get().isDefaultToolGradients() && isTool(stack)) {
-            data = getDefaultToolGradient(stack);
-        } else if (GradientConfig.get().isDefaultArmorGradients() && isArmor(stack)) {
-            data = getDefaultArmorGradient(stack);
-        }
+            GradientData data = forced.toGradientData();
+            String customName = forced.hasCustomName() ? forced.getCustomName() : null;
 
-        if (data == null) return;
-
-        java.util.List<net.minecraft.network.chat.Component> tooltip = event.getToolTip();
-
-        if (!tooltip.isEmpty()) {
-            String nameText;
-            if (customName != null) {
-                nameText = customName;
-            } else {
-                nameText = tooltip.get(0).getString();
+            java.util.List<net.minecraft.network.chat.Component> tooltip = event.getToolTip();
+            if (!tooltip.isEmpty()) {
+                String nameText = customName != null ? customName : stack.getHoverName().getString();
+                if (!nameText.isEmpty()) {
+                    net.minecraft.network.chat.Component gradientName = data.applyGradient(nameText);
+                    tooltip.set(0, gradientName);
+                }
             }
-
-            if (!nameText.isEmpty()) {
-                net.minecraft.network.chat.Component gradientName = data.applyGradient(nameText);
-                tooltip.set(0, gradientName);
+        } else if (GradientConfig.get().isDefaultToolGradients() && isTool(stack)) {
+            GradientData data = getDefaultToolGradient(stack);
+            if (data != null) {
+                java.util.List<net.minecraft.network.chat.Component> tooltip = event.getToolTip();
+                if (!tooltip.isEmpty()) {
+                    String nameText = stack.getHoverName().getString();
+                    if (!nameText.isEmpty()) {
+                        net.minecraft.network.chat.Component gradientName = data.applyGradient(nameText);
+                        tooltip.set(0, gradientName);
+                    }
+                }
+            }
+        } else if (GradientConfig.get().isDefaultArmorGradients() && isArmor(stack)) {
+            GradientData data = getDefaultArmorGradient(stack);
+            if (data != null) {
+                java.util.List<net.minecraft.network.chat.Component> tooltip = event.getToolTip();
+                if (!tooltip.isEmpty()) {
+                    String nameText = stack.getHoverName().getString();
+                    if (!nameText.isEmpty()) {
+                        net.minecraft.network.chat.Component gradientName = data.applyGradient(nameText);
+                        tooltip.set(0, gradientName);
+                    }
+                }
             }
         }
     }
 
     public static void applyForcedGradients(ServerPlayer player) {
         if (player == null) return;
-        if (GradientConfig.get().getForcedGradients().isEmpty() && GradientConfig.get().getBlacklistedItems().isEmpty() && !GradientConfig.get().isDefaultToolGradients() && !GradientConfig.get().isDefaultArmorGradients()) return;
+        if (GradientConfig.get().getAllItems().isEmpty() && GradientConfig.get().getBlacklistedItems().isEmpty() && !GradientConfig.get().isDefaultToolGradients() && !GradientConfig.get().isDefaultArmorGradients()) return;
 
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
@@ -102,7 +111,7 @@ public class ConfigHandler {
 
             if (GradientData.hasGradient(stack)) continue;
 
-            GradientConfig.ItemGradientEntry forced = GradientConfig.get().getForcedGradient(itemId);
+            GradientConfig.ItemGradientEntry forced = GradientConfig.get().getItem(itemId);
             if (forced != null) {
                 GradientData data = forced.toGradientData();
                 GradientData.setOnItemStack(stack, data);
@@ -135,7 +144,7 @@ public class ConfigHandler {
 
             GradientData.removeFromItemStack(stack);
 
-            GradientConfig.ItemGradientEntry forced = GradientConfig.get().getForcedGradient(itemId);
+            GradientConfig.ItemGradientEntry forced = GradientConfig.get().getItem(itemId);
             if (forced != null && !GradientConfig.get().isItemBlacklisted(itemId)) {
                 GradientData data = forced.toGradientData();
                 GradientData.setOnItemStack(stack, data);

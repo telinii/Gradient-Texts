@@ -2,12 +2,16 @@ package com.scrowl.gradienttext.config;
 
 import com.google.gson.*;
 import com.scrowl.gradienttext.GradientTextMod;
+import com.scrowl.gradienttext.config.GradientConfig.GroupEntry;
 import com.scrowl.gradienttext.config.GradientConfig.ItemGradientEntry;
+import com.scrowl.gradienttext.config.GradientConfig.ListEntry;
 import net.minecraftforge.fml.loading.FMLPaths;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ConfigManager {
     private static final String CONFIG_FILE = "gradienttext.json";
@@ -64,15 +68,13 @@ public class ConfigManager {
                 }
             }
 
-            if (root.has("forcedGradients")) {
-                JsonObject forced = root.getAsJsonObject("forcedGradients");
-                for (String itemId : forced.keySet()) {
-                    JsonObject entryObj = forced.getAsJsonObject(itemId);
-                    ItemGradientEntry entry = parseItemEntry(entryObj);
-                    if (entry != null) {
-                        config.setForcedGradient(itemId, entry);
-                    }
-                }
+            boolean hasNew = root.has("groups") || root.has("unassigned");
+
+            if (hasNew) {
+                loadNewStructure(config, root);
+            } else if (root.has("forcedGradients")) {
+                migrateOldStructure(config, root);
+                GradientTextMod.LOGGER.info("Migrated legacy forcedGradients config to new structure");
             }
 
             GradientConfig.set(config);
@@ -82,7 +84,68 @@ public class ConfigManager {
         }
     }
 
+    private static void loadNewStructure(GradientConfig config, JsonObject root) {
+        if (root.has("groups")) {
+            JsonArray groupsArr = root.getAsJsonArray("groups");
+            List<GroupEntry> groups = new ArrayList<>();
+            for (JsonElement gElem : groupsArr) {
+                JsonObject gObj = gElem.getAsJsonObject();
+                GroupEntry group = new GroupEntry(gObj.has("name") ? gObj.get("name").getAsString() : "");
+                if (gObj.has("lists")) {
+                    JsonArray listsArr = gObj.getAsJsonArray("lists");
+                    for (JsonElement lElem : listsArr) {
+                        JsonObject lObj = lElem.getAsJsonObject();
+                        ListEntry list = new ListEntry(lObj.has("name") ? lObj.get("name").getAsString() : "");
+                        if (lObj.has("items")) {
+                            for (JsonElement iElem : lObj.getAsJsonArray("items")) {
+                                ItemGradientEntry entry = parseItemEntry(iElem.getAsJsonObject());
+                                if (entry != null) {
+                                    list.getItems().add(entry);
+                                }
+                            }
+                        }
+                        group.getLists().add(list);
+                    }
+                }
+                groups.add(group);
+            }
+            config.setGroups(groups);
+        }
+
+        if (root.has("unassigned")) {
+            List<ItemGradientEntry> unassigned = new ArrayList<>();
+            for (JsonElement iElem : root.getAsJsonArray("unassigned")) {
+                ItemGradientEntry entry = parseItemEntry(iElem.getAsJsonObject());
+                if (entry != null) {
+                    unassigned.add(entry);
+                }
+            }
+            config.setUnassigned(unassigned);
+        }
+    }
+
+    private static void migrateOldStructure(GradientConfig config, JsonObject root) {
+        JsonObject forced = root.getAsJsonObject("forcedGradients");
+        if (forced == null) return;
+
+        GroupEntry group = new GroupEntry(GradientConfig.DEFAULT_GROUP_NAME);
+        ListEntry list = new ListEntry(GradientConfig.DEFAULT_LIST_NAME);
+
+        for (String itemId : forced.keySet()) {
+            ItemGradientEntry entry = parseItemEntry(forced.getAsJsonObject(itemId));
+            if (entry == null) continue;
+            entry.setItemId(itemId);
+            list.getItems().add(entry);
+        }
+
+        if (!list.getItems().isEmpty() || forced.size() == 0) {
+            group.getLists().add(list);
+            config.getGroups().add(group);
+        }
+    }
+
     public static void save() {
+        if (configDir == null) return;
         Path configFile = configDir.resolve(CONFIG_FILE);
         GradientConfig config = GradientConfig.get();
 
@@ -99,11 +162,31 @@ public class ConfigManager {
             }
             root.add("blacklistedItems", blacklist);
 
-            JsonObject forced = new JsonObject();
-            for (var entry : config.getForcedGradients().entrySet()) {
-                forced.add(entry.getKey(), serializeItemEntry(entry.getValue()));
+            JsonArray groups = new JsonArray();
+            for (GroupEntry group : config.getGroups()) {
+                JsonObject gObj = new JsonObject();
+                gObj.addProperty("name", group.getName());
+                JsonArray lists = new JsonArray();
+                for (ListEntry list : group.getLists()) {
+                    JsonObject lObj = new JsonObject();
+                    lObj.addProperty("name", list.getName());
+                    JsonArray items = new JsonArray();
+                    for (ItemGradientEntry entry : list.getItems()) {
+                        items.add(serializeItemEntry(entry));
+                    }
+                    lObj.add("items", items);
+                    lists.add(lObj);
+                }
+                gObj.add("lists", lists);
+                groups.add(gObj);
             }
-            root.add("forcedGradients", forced);
+            root.add("groups", groups);
+
+            JsonArray unassigned = new JsonArray();
+            for (ItemGradientEntry entry : config.getUnassigned()) {
+                unassigned.add(serializeItemEntry(entry));
+            }
+            root.add("unassigned", unassigned);
 
             Files.writeString(configFile, GSON.toJson(root));
             GradientTextMod.LOGGER.info("Config saved successfully");
@@ -114,6 +197,8 @@ public class ConfigManager {
 
     private static ItemGradientEntry parseItemEntry(JsonObject obj) {
         try {
+            String itemId = obj.has("itemId") ? obj.get("itemId").getAsString() : "";
+
             JsonArray colorsArr = obj.getAsJsonArray("colors");
             int[] colors = new int[colorsArr.size()];
             for (int i = 0; i < colorsArr.size(); i++) {
@@ -126,7 +211,7 @@ public class ConfigManager {
             float speed = obj.has("speed") ? obj.get("speed").getAsFloat() : 1.0f;
             String customName = obj.has("customName") ? obj.get("customName").getAsString() : "";
 
-            return new ItemGradientEntry(colors, direction, mode, bold, speed, customName);
+            return new ItemGradientEntry(itemId, colors, direction, mode, bold, speed, customName);
         } catch (Exception e) {
             GradientTextMod.LOGGER.error("Failed to parse item gradient entry", e);
             return null;
@@ -135,6 +220,8 @@ public class ConfigManager {
 
     private static JsonObject serializeItemEntry(ItemGradientEntry entry) {
         JsonObject obj = new JsonObject();
+
+        obj.addProperty("itemId", entry.getItemId());
 
         JsonArray colors = new JsonArray();
         for (int color : entry.getColors()) {
