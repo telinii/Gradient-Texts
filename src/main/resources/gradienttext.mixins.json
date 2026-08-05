@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.scrowl.gradienttext.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "gradienttext.refmap.json",
+  "mixins": [
+    "ItemRendererMixin"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

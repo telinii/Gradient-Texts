@@ -1,10 +1,15 @@
-# Gradient Texts v1.0.2
+# Gradient Texts v1.0.3
 
 A Minecraft Forge 1.20.1 mod that adds beautiful gradient color effects to item names and tooltips.
 
-**Download**: [Latest Release](https://github.com/telinii/Gradient-Texts/releases/tag/v1.0.2)
+**Download**: [Latest Release](https://github.com/telinii/Gradient-Texts/releases/tag/v1.0.3)
 
-## What's New (Update 2)
+## What's New (Update 3)
+
+### Gradient Glow Effect
+- Enchantment glint now follows the gradient colors instead of default purple
+- Dynamic/Smooth modes animate the glint in real-time
+- Toggle on/off via config (`gradientGlowEnabled`)
 
 ### Apotheosis Compatibility
 - Fixed compatibility issues with Apotheosis mod
@@ -64,6 +69,7 @@ A Minecraft Forge 1.20.1 mod that adds beautiful gradient color effects to item 
   "smoothGradient": true,
   "defaultToolGradients": false,
   "defaultArmorGradients": false,
+  "gradientGlowEnabled": true,
   "defaultGradientMode": "static",
   "blacklistedItems": [],
   "forcedGradients": {}

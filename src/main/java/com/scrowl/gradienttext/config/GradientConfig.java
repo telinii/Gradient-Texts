@@ -12,6 +12,7 @@ public class GradientConfig {
     private boolean smoothGradient = true;
     private boolean defaultToolGradients = false;
     private boolean defaultArmorGradients = false;
+    private boolean gradientGlowEnabled = true;
     private String defaultGradientMode = "static";
     private Set<String> blacklistedItems = new HashSet<>();
     private Map<String, ItemGradientEntry> forcedGradients = new LinkedHashMap<>();
@@ -41,6 +42,9 @@ public class GradientConfig {
 
     public boolean isDefaultArmorGradients() { return defaultArmorGradients; }
     public void setDefaultArmorGradients(boolean enabled) { this.defaultArmorGradients = enabled; }
+
+    public boolean isGradientGlowEnabled() { return gradientGlowEnabled; }
+    public void setGradientGlowEnabled(boolean enabled) { this.gradientGlowEnabled = enabled; }
 
     public String getDefaultGradientMode() { return defaultGradientMode; }
     public void setDefaultGradientMode(String mode) { this.defaultGradientMode = mode; }
