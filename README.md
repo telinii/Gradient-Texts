@@ -2,6 +2,19 @@
 
 ## What's New
 
+### Gradient Wands
+- Two new building tools for recoloring blocks with themed gradient ramps:
+  - **Gradient Wand** (`gradienttext:gradient_wand`) - recolors exposed faces of a region
+  - **Gradient Depth Wand** (`gradienttext:depth_gradient_wand`) - paints down columns, only touching whitelisted blocks
+- **Controls**:
+  - **Right-click** anywhere - apply the gradient at the point you are aiming at (up to 32 blocks away, no need to walk up to a block)
+  - **Shift + Right-click** anywhere - open the wand's configuration menu
+- 10 themed gradients (dark -> light block ramps): Deepslate Vein, Nether Temple, End Vault, Desert Tomb, Twisted Growth, The Void, Heaven, Space, Matrix, Molten Core
+- Surface wand options: gradient, radius (1-9), axis (vertical / horizontal)
+- Depth wand options: gradient, radius (1-9), depth (1-32), and a searchable whitelist of blocks to recolor
+- Per-block randomness so builds keep a natural, varied texture
+- **Area preview**: holding a wand shows a wireframe box over the exact region that would be affected, tracking your aim point
+
 ### Default Tool Gradients
 - Auto-applies gradients to all tools in your inventory
 - Detects tools by type (sword, axe, pickaxe, shovel, hoe) — works with modded tools
@@ -23,6 +36,11 @@
   - **Gold**: Gold / Light Gold
   - **Diamond**: Teal / Mint
   - **Netherite**: Gray / Dark Red
+
+### Default Material Gradients
+- Auto-applies gradients to items based on their crafting material
+- Resolves the material from the item's recipe hierarchy (root items)
+- New `defaultMaterialGradients` config toggle
 
 ### Gradient Mode Selector
 - **Static**: Gradient stays fixed on the item name
@@ -58,6 +76,7 @@
   "smoothGradient": true,
   "defaultToolGradients": false,
   "defaultArmorGradients": false,
+  "defaultMaterialGradients": false,
   "defaultGradientMode": "static",
   "blacklistedItems": [],
   "forcedGradients": {}

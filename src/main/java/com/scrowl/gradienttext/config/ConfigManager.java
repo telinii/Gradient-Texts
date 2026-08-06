@@ -10,7 +10,9 @@ import net.minecraftforge.fml.loading.FMLPaths;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class ConfigManager {
@@ -44,43 +46,54 @@ public class ConfigManager {
             JsonObject root = JsonParser.parseString(json).getAsJsonObject();
 
             GradientConfig config = new GradientConfig();
-
-            if (root.has("smoothGradient")) {
-                config.setSmoothGradient(root.get("smoothGradient").getAsBoolean());
-            }
-
-            if (root.has("defaultToolGradients")) {
-                config.setDefaultToolGradients(root.get("defaultToolGradients").getAsBoolean());
-            }
-
-            if (root.has("defaultArmorGradients")) {
-                config.setDefaultArmorGradients(root.get("defaultArmorGradients").getAsBoolean());
-            }
-
-            if (root.has("defaultGradientMode")) {
-                config.setDefaultGradientMode(root.get("defaultGradientMode").getAsString());
-            }
-
-            if (root.has("blacklistedItems")) {
-                JsonArray blacklist = root.getAsJsonArray("blacklistedItems");
-                for (JsonElement elem : blacklist) {
-                    config.addBlacklistedItem(elem.getAsString());
-                }
-            }
-
-            boolean hasNew = root.has("groups") || root.has("unassigned");
-
-            if (hasNew) {
-                loadNewStructure(config, root);
-            } else if (root.has("forcedGradients")) {
-                migrateOldStructure(config, root);
-                GradientTextMod.LOGGER.info("Migrated legacy forcedGradients config to new structure");
-            }
+            parseTopLevel(root, config);
 
             GradientConfig.set(config);
             GradientTextMod.LOGGER.info("Config loaded successfully");
         } catch (Exception e) {
             GradientTextMod.LOGGER.error("Failed to load config", e);
+        }
+    }
+
+    private static void parseTopLevel(JsonObject root, GradientConfig config) {
+        if (root.has("smoothGradient")) {
+            config.setSmoothGradient(root.get("smoothGradient").getAsBoolean());
+        }
+
+        if (root.has("defaultToolGradients")) {
+            config.setDefaultToolGradients(root.get("defaultToolGradients").getAsBoolean());
+        }
+
+        if (root.has("defaultArmorGradients")) {
+            config.setDefaultArmorGradients(root.get("defaultArmorGradients").getAsBoolean());
+        }
+
+        if (root.has("defaultMaterialGradients")) {
+            config.setDefaultMaterialGradients(root.get("defaultMaterialGradients").getAsBoolean());
+        }
+
+        if (root.has("defaultGradientMode")) {
+            config.setDefaultGradientMode(root.get("defaultGradientMode").getAsString());
+        }
+
+        if (root.has("backgroundPattern")) {
+            config.setBackgroundPattern(root.get("backgroundPattern").getAsString());
+        }
+
+        if (root.has("blacklistedItems")) {
+            JsonArray blacklist = root.getAsJsonArray("blacklistedItems");
+            for (JsonElement elem : blacklist) {
+                config.addBlacklistedItem(elem.getAsString());
+            }
+        }
+
+        boolean hasNew = root.has("groups") || root.has("unassigned");
+
+        if (hasNew) {
+            loadNewStructure(config, root);
+        } else if (root.has("forcedGradients")) {
+            migrateOldStructure(config, root);
+            GradientTextMod.LOGGER.info("Migrated legacy forcedGradients config to new structure");
         }
     }
 
@@ -147,51 +160,120 @@ public class ConfigManager {
     public static void save() {
         if (configDir == null) return;
         Path configFile = configDir.resolve(CONFIG_FILE);
-        GradientConfig config = GradientConfig.get();
 
         try {
-            JsonObject root = new JsonObject();
-            root.addProperty("smoothGradient", config.isSmoothGradient());
-            root.addProperty("defaultToolGradients", config.isDefaultToolGradients());
-            root.addProperty("defaultArmorGradients", config.isDefaultArmorGradients());
-            root.addProperty("defaultGradientMode", config.getDefaultGradientMode());
-
-            JsonArray blacklist = new JsonArray();
-            for (String item : config.getBlacklistedItems()) {
-                blacklist.add(item);
-            }
-            root.add("blacklistedItems", blacklist);
-
-            JsonArray groups = new JsonArray();
-            for (GroupEntry group : config.getGroups()) {
-                JsonObject gObj = new JsonObject();
-                gObj.addProperty("name", group.getName());
-                JsonArray lists = new JsonArray();
-                for (ListEntry list : group.getLists()) {
-                    JsonObject lObj = new JsonObject();
-                    lObj.addProperty("name", list.getName());
-                    JsonArray items = new JsonArray();
-                    for (ItemGradientEntry entry : list.getItems()) {
-                        items.add(serializeItemEntry(entry));
-                    }
-                    lObj.add("items", items);
-                    lists.add(lObj);
-                }
-                gObj.add("lists", lists);
-                groups.add(gObj);
-            }
-            root.add("groups", groups);
-
-            JsonArray unassigned = new JsonArray();
-            for (ItemGradientEntry entry : config.getUnassigned()) {
-                unassigned.add(serializeItemEntry(entry));
-            }
-            root.add("unassigned", unassigned);
-
-            Files.writeString(configFile, GSON.toJson(root));
+            Files.writeString(configFile, GSON.toJson(serializeConfig(GradientConfig.get())));
             GradientTextMod.LOGGER.info("Config saved successfully");
         } catch (Exception e) {
             GradientTextMod.LOGGER.error("Failed to save config", e);
+        }
+    }
+
+    private static JsonObject serializeConfig(GradientConfig config) {
+        JsonObject root = new JsonObject();
+        root.addProperty("smoothGradient", config.isSmoothGradient());
+        root.addProperty("defaultToolGradients", config.isDefaultToolGradients());
+        root.addProperty("defaultArmorGradients", config.isDefaultArmorGradients());
+        root.addProperty("defaultMaterialGradients", config.isDefaultMaterialGradients());
+        root.addProperty("defaultGradientMode", config.getDefaultGradientMode());
+        root.addProperty("backgroundPattern", config.getBackgroundPattern());
+
+        JsonArray blacklist = new JsonArray();
+        for (String item : config.getBlacklistedItems()) {
+            blacklist.add(item);
+        }
+        root.add("blacklistedItems", blacklist);
+
+        JsonArray groups = new JsonArray();
+        for (GroupEntry group : config.getGroups()) {
+            JsonObject gObj = new JsonObject();
+            gObj.addProperty("name", group.getName());
+            JsonArray lists = new JsonArray();
+            for (ListEntry list : group.getLists()) {
+                JsonObject lObj = new JsonObject();
+                lObj.addProperty("name", list.getName());
+                JsonArray items = new JsonArray();
+                for (ItemGradientEntry entry : list.getItems()) {
+                    items.add(serializeItemEntry(entry));
+                }
+                lObj.add("items", items);
+                lists.add(lObj);
+            }
+            gObj.add("lists", lists);
+            groups.add(gObj);
+        }
+        root.add("groups", groups);
+
+        JsonArray unassigned = new JsonArray();
+        for (ItemGradientEntry entry : config.getUnassigned()) {
+            unassigned.add(serializeItemEntry(entry));
+        }
+        root.add("unassigned", unassigned);
+
+        return root;
+    }
+
+    // ================================================================
+    // PRESETS
+    // ================================================================
+    private static Path getPresetsDir() {
+        if (configDir == null) return null;
+        Path dir = configDir.resolve("presets");
+        try {
+            Files.createDirectories(dir);
+        } catch (IOException e) {
+            GradientTextMod.LOGGER.error("Failed to create presets directory", e);
+        }
+        return dir;
+    }
+
+    public static String exportPreset(String name) {
+        Path dir = getPresetsDir();
+        if (dir == null) return null;
+        try {
+            if (name == null || name.trim().isEmpty()) {
+                name = "preset-" + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
+            }
+            String safe = name.trim().replaceAll("[^a-zA-Z0-9._-]", "_");
+            if (!safe.toLowerCase().endsWith(".json")) safe += ".json";
+            Files.writeString(dir.resolve(safe), GSON.toJson(serializeConfig(GradientConfig.get())));
+            GradientTextMod.LOGGER.info("Preset exported: {}", safe);
+            return safe;
+        } catch (Exception e) {
+            GradientTextMod.LOGGER.error("Failed to export preset", e);
+            return null;
+        }
+    }
+
+    public static List<String> listPresets() {
+        Path dir = getPresetsDir();
+        if (dir == null) return new ArrayList<>();
+        try (var s = Files.list(dir)) {
+            return s.filter(p -> p.getFileName().toString().endsWith(".json"))
+                    .map(p -> p.getFileName().toString())
+                    .sorted(java.util.Comparator.reverseOrder())
+                    .collect(java.util.stream.Collectors.toList());
+        } catch (IOException e) {
+            GradientTextMod.LOGGER.error("Failed to list presets", e);
+            return new ArrayList<>();
+        }
+    }
+
+    public static boolean importPreset(String fileName) {
+        Path dir = getPresetsDir();
+        if (dir == null) return false;
+        try {
+            Path preset = dir.resolve(fileName).normalize();
+            if (!preset.startsWith(dir) || !Files.exists(preset)) return false;
+            GradientConfig config = new GradientConfig();
+            parseTopLevel(JsonParser.parseString(Files.readString(preset)).getAsJsonObject(), config);
+            GradientConfig.set(config);
+            save();
+            GradientTextMod.LOGGER.info("Preset imported: {}", fileName);
+            return true;
+        } catch (Exception e) {
+            GradientTextMod.LOGGER.error("Failed to import preset " + fileName, e);
+            return false;
         }
     }
 

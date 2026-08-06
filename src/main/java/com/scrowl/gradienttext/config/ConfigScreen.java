@@ -3,10 +3,12 @@ package com.scrowl.gradienttext.config;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.scrowl.gradienttext.command.ColorSuggestions;
 import com.scrowl.gradienttext.gradient.GradientEngine;
+import com.scrowl.gradienttext.render.BackgroundPatterns;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -31,6 +33,9 @@ public class ConfigScreen extends Screen {
     // ---- header ----
     private Button toolGradientsBtn;
     private Button armorGradientsBtn;
+    private Button materialGradientsBtn;
+    private Button exportPresetBtn;
+    private Button importPresetBtn;
     private Button modeStaticBtn;
     private Button modeDynamicBtn;
     private Button modeSmoothBtn;
@@ -39,6 +44,7 @@ public class ConfigScreen extends Screen {
     // ---- left toolbar ----
     private Button tabListsBtn;
     private Button tabBlacklistBtn;
+    private Button patternTabBtn;
     private Button addGroupBtn;
     private Button addListBtn;
     private Button renameBtn;
@@ -65,6 +71,8 @@ public class ConfigScreen extends Screen {
 
     // ---- state ----
     private boolean showBlacklistTab = false;
+    private boolean showPatternTab = false;
+    private String currentBackgroundPattern = "deepslate_vein";
     private int selGroupIndex = -1;
     private int selListIndex = -1;
     private boolean viewUnassigned = false;
@@ -85,7 +93,7 @@ public class ConfigScreen extends Screen {
     private int sugSelectIndex = -1;
 
     // ---- popup state ----
-    private enum Popup { NONE, ADD_CHOICE, NAME_INPUT, CONFIRM_DELETE, PICK_LIST, PICK_GROUP }
+    private enum Popup { NONE, ADD_CHOICE, NAME_INPUT, CONFIRM_DELETE, PICK_LIST, PICK_GROUP, PICK_PRESET }
     private Popup popup = Popup.NONE;
     private String popupTitle = "";
     private String popupPrompt = "";
@@ -96,6 +104,8 @@ public class ConfigScreen extends Screen {
     private GradientConfig.ItemGradientEntry popupTargetItem = null;
     private boolean popupConfirmMove = false;
     private int pendingNameAction = 0; // 0 none, 1 addList, 2 groupName, 3 listName, 4 renameGroup, 5 renameList
+    private final List<String> popupPresets = new ArrayList<>();
+    private final List<int[]> presetRows = new ArrayList<>();
 
     // ---- row geometries (rebuilt each frame) ----
     private final List<int[]> leftRows = new ArrayList<>();
@@ -114,8 +124,8 @@ public class ConfigScreen extends Screen {
 
     // ---- layout metrics ----
     private int margin = 8;
-    private int headerH = 36;
-    private int leftW = 150;
+    private int headerH = 54;
+    private int leftW = 176;
     private int rightW = 220;
     private int leftX, rightX, centerX, centerW;
     private int contentTop, contentBottom;
@@ -144,35 +154,50 @@ public class ConfigScreen extends Screen {
                     currentToolGradients = !currentToolGradients;
                     updateToggleButtons();
                 }
-        ).pos(margin, headerH + 4).size(96, 16).build());
+        ).pos(margin, contentTop - 34).size(96, 16).build());
 
         armorGradientsBtn = addRenderableWidget(new Button.Builder(
                 Component.literal("Armor: OFF"), b -> {
                     currentArmorGradients = !currentArmorGradients;
                     updateToggleButtons();
                 }
-        ).pos(margin + 100, headerH + 4).size(90, 16).build());
+        ).pos(margin + 100, contentTop - 34).size(90, 16).build());
+
+        materialGradientsBtn = addRenderableWidget(new Button.Builder(
+                Component.literal("Material Gradients: OFF"), b -> {
+                    currentMaterialGradients = !currentMaterialGradients;
+                    updateToggleButtons();
+                }
+        ).pos(margin, contentTop - 18).size(170, 16).build());
+
+        exportPresetBtn = addRenderableWidget(new Button.Builder(
+                Component.literal("Export"), b -> onExportPreset()
+        ).pos(margin + 174, contentTop - 18).size(58, 16).build());
+
+        importPresetBtn = addRenderableWidget(new Button.Builder(
+                Component.literal("Import"), b -> onImportPreset()
+        ).pos(margin + 236, contentTop - 18).size(58, 16).build());
 
         modeStaticBtn = addRenderableWidget(new Button.Builder(
                 Component.literal("Static"), b -> {
                     currentGradientMode = "static";
                     updateModeButtons();
                 }
-        ).pos(margin + 200, headerH + 4).size(50, 16).build());
+        ).pos(margin + 200, contentTop - 34).size(50, 16).build());
 
         modeDynamicBtn = addRenderableWidget(new Button.Builder(
                 Component.literal("Dynamic"), b -> {
                     currentGradientMode = "dynamic";
                     updateModeButtons();
                 }
-        ).pos(margin + 254, headerH + 4).size(58, 16).build());
+        ).pos(margin + 254, contentTop - 34).size(58, 16).build());
 
         modeSmoothBtn = addRenderableWidget(new Button.Builder(
                 Component.literal("Smooth"), b -> {
                     currentGradientMode = "smooth";
                     updateModeButtons();
                 }
-        ).pos(margin + 316, headerH + 4).size(54, 16).build());
+        ).pos(margin + 316, contentTop - 34).size(54, 16).build());
 
         updateToggleButtons();
         updateModeButtons();
@@ -184,30 +209,30 @@ public class ConfigScreen extends Screen {
         itemIdInput.setResponder(this::onItemIdChanged);
         addWidget(itemIdInput);
 
-        nameInput = new EditBox(font, rightX, fy + 26, rightW, 16, Component.literal("Custom Name"));
+        nameInput = new EditBox(font, rightX, fy + 30, rightW, 16, Component.literal("Custom Name"));
         nameInput.setMaxLength(64);
         nameInput.setHint(Component.literal("(optional)"));
         addWidget(nameInput);
 
-        colorsInput = new EditBox(font, rightX, fy + 52, rightW, 16, Component.literal("Colors"));
+        colorsInput = new EditBox(font, rightX, fy + 60, rightW, 16, Component.literal("Colors"));
         colorsInput.setMaxLength(256);
         colorsInput.setValue("#FF0000,#0000FF");
         colorsInput.setResponder(this::onColorsChanged);
         addWidget(colorsInput);
 
-        directionInput = new EditBox(font, rightX, fy + 78, rightW, 16, Component.literal("Direction"));
+        directionInput = new EditBox(font, rightX, fy + 90, rightW, 16, Component.literal("Direction"));
         directionInput.setMaxLength(16);
         directionInput.setValue("horizontal");
         directionInput.setResponder(this::onDirectionChanged);
         addWidget(directionInput);
 
-        modeInput = new EditBox(font, rightX, fy + 104, rightW, 16, Component.literal("Mode"));
+        modeInput = new EditBox(font, rightX, fy + 120, rightW, 16, Component.literal("Mode"));
         modeInput.setMaxLength(16);
         modeInput.setValue("static");
         modeInput.setResponder(this::onModeChanged);
         addWidget(modeInput);
 
-        speedInput = new EditBox(font, rightX, fy + 130, rightW, 16, Component.literal("Speed"));
+        speedInput = new EditBox(font, rightX, fy + 150, rightW, 16, Component.literal("Speed"));
         speedInput.setMaxLength(8);
         speedInput.setValue("1.0");
         addWidget(speedInput);
@@ -217,19 +242,19 @@ public class ConfigScreen extends Screen {
                     currentBold = !currentBold;
                     b.setMessage(Component.literal("Bold: " + (currentBold ? "ON" : "OFF")));
                 }
-        ).pos(rightX, fy + 150).size(rightW, 18).build());
+        ).pos(rightX, fy + 168).size(rightW, 18).build());
 
         addBtn = addRenderableWidget(new Button.Builder(
                 Component.literal("ADD"), b -> onAddPressed()
-        ).pos(rightX, fy + 172).size(rightW, 20).build());
+        ).pos(rightX, fy + 190).size(rightW, 20).build());
 
         cancelEditBtn = addRenderableWidget(new Button.Builder(
                 Component.literal("Cancel Edit"), b -> cancelEditing()
-        ).pos(rightX, fy + 196).size(rightW, 16).build());
+        ).pos(rightX, fy + 212).size(rightW, 16).build());
 
         addBlacklistBtn = addRenderableWidget(new Button.Builder(
                 Component.literal("Add to Blacklist"), b -> addToBlacklistFromForm()
-        ).pos(rightX, fy + 216).size(rightW, 16).build());
+        ).pos(rightX, fy + 232).size(rightW, 16).build());
 
         saveBtn = addRenderableWidget(new Button.Builder(
                 Component.literal("Save Config"), b -> {
@@ -237,28 +262,40 @@ public class ConfigScreen extends Screen {
                     statusMsg = "Saved!";
                     statusColor = 0x55FF55;
                 }
-        ).pos(rightX, fy + 240).size(rightW, 18).build());
+        ).pos(rightX, fy + 254).size(rightW, 18).build());
 
         doneBtn = addRenderableWidget(new Button.Builder(
                 CommonComponents.GUI_DONE, b -> minecraft.setScreen(parent)
-        ).pos(rightX, fy + 262).size(rightW, 18).build());
+        ).pos(rightX, fy + 276).size(rightW, 18).build());
 
         // ---- left tabs + toolbar ----
+        int tabW = (leftW - 8) / 3;
         tabListsBtn = addRenderableWidget(new Button.Builder(
                 Component.literal("Lists"), b -> {
                     showBlacklistTab = false;
+                    showPatternTab = false;
                     updateTabButtons();
                     selItemIndex = -1;
                 }
-        ).pos(leftX, contentTop).size(leftW / 2 - 2, 16).build());
+        ).pos(leftX, contentTop).size(tabW, 16).build());
 
         tabBlacklistBtn = addRenderableWidget(new Button.Builder(
                 Component.literal("Blacklist"), b -> {
                     showBlacklistTab = true;
+                    showPatternTab = false;
                     updateTabButtons();
                     selItemIndex = -1;
                 }
-        ).pos(leftX + leftW / 2 + 2, contentTop).size(leftW / 2 - 2, 16).build());
+        ).pos(leftX + tabW + 4, contentTop).size(tabW, 16).build());
+
+        patternTabBtn = addRenderableWidget(new Button.Builder(
+                Component.literal("Pattern"), b -> {
+                    showPatternTab = true;
+                    showBlacklistTab = false;
+                    updateTabButtons();
+                    selItemIndex = -1;
+                }
+        ).pos(leftX + (tabW + 4) * 2, contentTop).size(tabW, 16).build());
 
         addGroupBtn = addRenderableWidget(new Button.Builder(
                 Component.literal("+Group"), b -> startNamePrompt(1)
@@ -312,6 +349,7 @@ public class ConfigScreen extends Screen {
 
     private boolean currentToolGradients = false;
     private boolean currentArmorGradients = false;
+    private boolean currentMaterialGradients = false;
 
     private void computeLayout() {
         leftX = margin;
@@ -323,19 +361,22 @@ public class ConfigScreen extends Screen {
             rightX = width - margin - rightW;
             centerW = rightX - centerX - 6;
         }
-        contentTop = headerH + 22;
+        contentTop = headerH + 4;
         contentBottom = height - margin;
     }
 
     private void refreshFormFromConfigDefaults() {
         currentToolGradients = GradientConfig.get().isDefaultToolGradients();
         currentArmorGradients = GradientConfig.get().isDefaultArmorGradients();
+        currentMaterialGradients = GradientConfig.get().isDefaultMaterialGradients();
         currentGradientMode = GradientConfig.get().getDefaultGradientMode();
+        currentBackgroundPattern = GradientConfig.get().getBackgroundPattern();
     }
 
     private void updateToggleButtons() {
         toolGradientsBtn.setMessage(Component.literal("Tool Gradients: " + (currentToolGradients ? "ON" : "OFF")));
         armorGradientsBtn.setMessage(Component.literal("Armor: " + (currentArmorGradients ? "ON" : "OFF")));
+        materialGradientsBtn.setMessage(Component.literal("Material Gradients: " + (currentMaterialGradients ? "ON" : "OFF")));
     }
 
     private void updateModeButtons() {
@@ -345,15 +386,55 @@ public class ConfigScreen extends Screen {
     }
 
     private void updateTabButtons() {
-        tabListsBtn.setMessage(Component.literal("Lists" + (showBlacklistTab ? "" : " *")));
+        tabListsBtn.setMessage(Component.literal("Lists" + (!showBlacklistTab && !showPatternTab ? " *" : "")));
         tabBlacklistBtn.setMessage(Component.literal("Blacklist" + (showBlacklistTab ? " *" : "")));
+        patternTabBtn.setMessage(Component.literal("Pattern" + (showPatternTab ? " *" : "")));
     }
 
     private void saveHeaderSettings() {
         GradientConfig.get().setDefaultToolGradients(currentToolGradients);
         GradientConfig.get().setDefaultArmorGradients(currentArmorGradients);
+        GradientConfig.get().setDefaultMaterialGradients(currentMaterialGradients);
         GradientConfig.get().setDefaultGradientMode(currentGradientMode);
+        GradientConfig.get().setBackgroundPattern(currentBackgroundPattern);
         ConfigManager.save();
+    }
+
+    private void onExportPreset() {
+        if (!GradientConfig.get().hasAnyGradientedItems()) {
+            statusMsg = "Nothing to export yet - add items first";
+            statusColor = 0xFFAA00;
+            return;
+        }
+        saveHeaderSettings();
+        startNamePrompt(6);
+    }
+
+    private void onImportPreset() {
+        popupPresets.clear();
+        popupPresets.addAll(ConfigManager.listPresets());
+        popupScroll = 0;
+        popup = Popup.PICK_PRESET;
+        popupTitle = "Import preset:";
+    }
+
+    private void doImportPreset(String fileName) {
+        if (ConfigManager.importPreset(fileName)) {
+            popup = Popup.NONE;
+            refreshFormFromConfigDefaults();
+            selGroupIndex = -1;
+            selListIndex = -1;
+            selItemIndex = -1;
+            selBlacklistIndex = -1;
+            viewUnassigned = false;
+            updateToggleButtons();
+            updateModeButtons();
+            statusMsg = "Imported: " + fileName;
+            statusColor = 0x55FF55;
+        } else {
+            statusMsg = "Import failed: " + fileName;
+            statusColor = 0xFF5555;
+        }
     }
 
     // ================================================================
@@ -387,7 +468,21 @@ public class ConfigScreen extends Screen {
         popupRows.clear();
 
         // --- left panel rows ---
-        if (!showBlacklistTab) {
+        if (showPatternTab) {
+            int y = leftListTop();
+            List<BackgroundPatterns.Pattern> pats = BackgroundPatterns.getAll();
+            for (int i = 0; i < pats.size(); i++) {
+                leftRows.add(new int[]{leftX + 2, y, leftW - 4, 22, 3, i, -1});
+                y += 22;
+            }
+            int maxScroll = y - contentBottom;
+            if (maxScroll > 0) {
+                scrollLeft = Math.max(0, Math.min(maxScroll, scrollLeft));
+                for (int[] r : leftRows) r[1] -= scrollLeft;
+            } else {
+                scrollLeft = 0;
+            }
+        } else if (!showBlacklistTab) {
             int y = leftListTop();
             List<GradientConfig.GroupEntry> groups = GradientConfig.get().getGroups();
             for (int gi = 0; gi < groups.size(); gi++) {
@@ -469,6 +564,20 @@ public class ConfigScreen extends Screen {
             if (maxScroll > 0) {
                 popupScroll = Math.max(0, Math.min(maxScroll, popupScroll));
                 for (PopupRow r : popupRows) r.y -= popupScroll;
+            } else {
+                popupScroll = 0;
+            }
+        } else if (popup == Popup.PICK_PRESET) {
+            int y = popupListTop();
+            presetRows.clear();
+            for (int i = 0; i < popupPresets.size(); i++) {
+                presetRows.add(new int[]{popupX() + 12, y, popupW() - 24, 14});
+                y += 14;
+            }
+            int maxScroll = y - popupBottom();
+            if (maxScroll > 0) {
+                popupScroll = Math.max(0, Math.min(maxScroll, popupScroll));
+                for (int[] r : presetRows) r[1] -= popupScroll;
             } else {
                 popupScroll = 0;
             }
@@ -899,6 +1008,7 @@ public class ConfigScreen extends Screen {
             case 2: return "New list name:";
             case 4: return "Rename list:";
             case 5: return "Rename group:";
+            case 6: return "Preset name:";
             case 10: return "New group name:";
             case 11: return "New list name:";
             case 12: return "New list name:";
@@ -943,6 +1053,18 @@ public class ConfigScreen extends Screen {
                     popupTargetGroup.setName(name);
                 }
                 break;
+            }
+            case 6: { // export preset
+                String fileName = ConfigManager.exportPreset(name);
+                if (fileName != null) {
+                    statusMsg = "Exported: " + fileName;
+                    statusColor = 0x55FF55;
+                } else {
+                    statusMsg = "Export failed";
+                    statusColor = 0xFF5555;
+                }
+                popup = Popup.NONE;
+                return;
             }
             case 10: { // "New Group + List" step 1: create group, then prompt list name
                 GradientConfig.GroupEntry group = new GradientConfig.GroupEntry(name);
@@ -994,7 +1116,8 @@ public class ConfigScreen extends Screen {
             case NAME_INPUT: return 96;
             case CONFIRM_DELETE: return 100;
             case PICK_LIST:
-            case PICK_GROUP: return Math.min(260, height - 40);
+            case PICK_GROUP:
+            case PICK_PRESET: return Math.min(260, height - 40);
             default: return 100;
         }
     }
@@ -1007,6 +1130,11 @@ public class ConfigScreen extends Screen {
     // RENDER
     // ================================================================
     @Override
+    public void renderBackground(GuiGraphics g) {
+        // no-op: BackgroundPatterns.render draws the block-pattern background
+    }
+
+    @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
         if (itemIdInput == null || toolGradientsBtn == null) return;
         buildRows();
@@ -1016,17 +1144,17 @@ public class ConfigScreen extends Screen {
         }
 
         // background
-        g.fill(0, 0, width, height, 0xFF101016);
+        BackgroundPatterns.render(g, width, height, currentBackgroundPattern);
 
         // header
-        g.fill(0, 0, width, headerH, 0xFF1A1A22);
+        g.fill(0, 0, width, headerH, 0xE01A1A22);
         g.drawString(font, "GRADIENT CONFIG", margin, 6, 0x55FFFF, true);
         g.drawString(font, "Group > List > Items", margin + 110, 8, 0x666666);
 
-        // panels
-        g.fill(leftX, contentTop, leftX + leftW, contentBottom, 0xFF1A1A22);
-        g.fill(centerX, contentTop, centerX + centerW, contentBottom, 0xFF16161C);
-        g.fill(rightX, contentTop, rightX + rightW, contentBottom, 0xFF1A1A22);
+        // panels (translucent so the block pattern shows through)
+        g.fill(leftX, contentTop, leftX + leftW, contentBottom, 0x601A1A22);
+        g.fill(centerX, contentTop, centerX + centerW, contentBottom, 0x6016161C);
+        g.fill(rightX, contentTop, rightX + rightW, contentBottom, 0x601A1A22);
 
         renderLeftPanel(g, mx, my);
         renderCenterPanel(g, mx, my);
@@ -1044,9 +1172,43 @@ public class ConfigScreen extends Screen {
         }
 
         super.render(g, mx, my, pt);
+
+        // suggestions drawn LAST so the dropdown always fully overlays the GUI
+        renderSuggestions(g, mx, my);
     }
 
     private void renderLeftPanel(GuiGraphics g, int mx, int my) {
+        if (showPatternTab) {
+            List<BackgroundPatterns.Pattern> pats = BackgroundPatterns.getAll();
+            for (int[] r : leftRows) {
+                int idx = r[5];
+                if (idx < 0 || idx >= pats.size()) continue;
+                BackgroundPatterns.Pattern p = pats.get(idx);
+                boolean sel = p.id.equals(currentBackgroundPattern);
+                if (isInRect(mx, my, r)) g.fill(r[0], r[1], r[0] + r[2], r[1] + r[3], 0x5055AAFF);
+                else if (sel) g.fill(r[0], r[1], r[0] + r[2], r[1] + r[3], 0x403388CC);
+                g.drawString(font, p.displayName, r[0] + 4, r[1] + 3, sel ? 0x55FFFF : 0xDDDDDD);
+                int barW = 40;
+                int bx = r[0] + r[2] - barW - 4;
+                int by = r[1] + 6;
+                int n = p.blocks.size();
+                if (n == 0 && p.gradient != null) {
+                    g.fillGradient(bx, by, bx + barW, by + 10, p.gradient[0], p.gradient[1]);
+                } else if (n == 0) {
+                    g.fill(bx, by, bx + barW, by + 10, 0xFF000000);
+                } else {
+                    int col = Math.max(1, barW / n);
+                    for (int b = 0; b < n; b++) {
+                        TextureAtlasSprite sp = BackgroundPatterns.sprite(p.blocks.get(b));
+                        if (sp == null) continue;
+                        int cw = (b == n - 1) ? barW - col * (n - 1) : col;
+                        g.blit(bx + b * col, by, 0, cw, 10, sp);
+                    }
+                }
+                g.drawString(font, "click to select", r[0] + 4, r[1] + 15, 0x666666);
+            }
+            return;
+        }
         if (showBlacklistTab) {
             g.drawString(font, "Blacklist mode", leftX + 4, contentTop + 60, 0xAAAAAA);
             g.drawString(font, "Click Blacklist rows in", leftX + 4, contentTop + 74, 0x666666);
@@ -1139,11 +1301,11 @@ public class ConfigScreen extends Screen {
     private void renderFormPanel(GuiGraphics g, int mx, int my) {
         // labels
         g.drawString(font, "Item ID", rightX, contentTop - 9, 0xAAAAAA);
-        g.drawString(font, "Custom Name", rightX, contentTop + 17, 0xAAAAAA);
-        g.drawString(font, "Colors (comma-separated)", rightX, contentTop + 43, 0xAAAAAA);
-        g.drawString(font, "Direction", rightX, contentTop + 69, 0xAAAAAA);
-        g.drawString(font, "Mode", rightX, contentTop + 95, 0xAAAAAA);
-        g.drawString(font, "Speed", rightX, contentTop + 121, 0xAAAAAA);
+        g.drawString(font, "Custom Name", rightX, contentTop + 21, 0xAAAAAA);
+        g.drawString(font, "Colors (comma-separated)", rightX, contentTop + 51, 0xAAAAAA);
+        g.drawString(font, "Direction", rightX, contentTop + 81, 0xAAAAAA);
+        g.drawString(font, "Mode", rightX, contentTop + 111, 0xAAAAAA);
+        g.drawString(font, "Speed", rightX, contentTop + 141, 0xAAAAAA);
 
         itemIdInput.render(g, mx, my, pt());
         nameInput.render(g, mx, my, pt());
@@ -1154,23 +1316,20 @@ public class ConfigScreen extends Screen {
 
         // position buttons dynamically
         int fy = contentTop;
-        boldBtn.setPosition(rightX, fy + 150);
-        addBtn.setPosition(rightX, fy + 172);
+        boldBtn.setPosition(rightX, fy + 168);
+        addBtn.setPosition(rightX, fy + 190);
         if (editing) {
             addBtn.setMessage(Component.literal("UPDATE"));
             cancelEditBtn.setMessage(Component.literal("Cancel Edit"));
-            cancelEditBtn.setPosition(rightX, fy + 196);
+            cancelEditBtn.setPosition(rightX, fy + 212);
             cancelEditBtn.visible = true;
         } else {
             addBtn.setMessage(Component.literal("ADD"));
             cancelEditBtn.visible = false;
         }
-        addBlacklistBtn.setPosition(rightX, fy + 216);
-        saveBtn.setPosition(rightX, fy + 240);
-        doneBtn.setPosition(rightX, fy + 262);
-
-        // suggestions
-        renderSuggestions(g, mx, my);
+        addBlacklistBtn.setPosition(rightX, fy + 232);
+        saveBtn.setPosition(rightX, fy + 254);
+        doneBtn.setPosition(rightX, fy + 276);
     }
 
     private float pt() { return 0f; }
@@ -1180,25 +1339,29 @@ public class ConfigScreen extends Screen {
         if (currentSuggestions.isEmpty()) return;
         int sx = rightX;
         int sy;
-        int fieldBottom = 0;
         switch (activeField) {
-            case 0: fieldBottom = contentTop + 16; sy = fieldBottom + 2; break;
-            case 2: fieldBottom = contentTop + 52 + 16; sy = fieldBottom + 2; break;
-            case 3: fieldBottom = contentTop + 78 + 16; sy = fieldBottom + 2; break;
-            case 4: fieldBottom = contentTop + 104 + 16; sy = fieldBottom + 2; break;
+            case 0: sy = contentTop + 16 + 2; break;
+            case 2: sy = contentTop + 60 + 16 + 2; break;
+            case 3: sy = contentTop + 90 + 16 + 2; break;
+            case 4: sy = contentTop + 120 + 16 + 2; break;
             default: return;
         }
         int sw = rightW;
-        int sh = Math.min(currentSuggestions.size(), 8) * 14 + 4;
-        g.fill(sx - 1, sy - 1, sx + sw + 1, sy + sh + 1, 0xFF555555);
-        g.fill(sx, sy, sx + sw, sy + sh, 0xFF101010);
         int shown = Math.min(currentSuggestions.size(), 8);
+        if (shown <= 0) return;
+        int sh = shown * 14 + 4;
+        // solid, opaque dropdown so it never blends with the fields underneath
+        g.fill(sx, sy, sx + sw, sy + sh, 0xFF20202E);
+        g.fill(sx, sy, sx + sw, sy + 1, 0xFF55FFFF);
+        g.fill(sx, sy + sh - 1, sx + sw, sy + sh, 0xFF55FFFF);
+        g.fill(sx, sy, sx + 1, sy + sh, 0xFF55FFFF);
+        g.fill(sx + sw - 1, sy, sx + sw, sy + sh, 0xFF55FFFF);
         for (int i = 0; i < shown; i++) {
             int y = sy + 2 + i * 14;
             boolean selected = (i == sugSelectIndex);
             boolean hov = mx >= sx && mx <= sx + sw && my >= y && my <= y + 12;
-            if (selected || hov) g.fill(sx, y, sx + sw, y + 12, 0x405555FF);
-            g.drawString(font, currentSuggestions.get(i), sx + 6, y + 2, selected || hov ? 0x55FFFF : 0xCCCCCC);
+            if (selected || hov) g.fill(sx + 1, y, sx + sw - 1, y + 12, 0xFF3344AA);
+            g.drawString(font, Component.literal(currentSuggestions.get(i)), sx + 6, y + 2, selected || hov ? 0xFFFFFF : 0xDDDDDD, true);
         }
     }
 
@@ -1238,6 +1401,18 @@ public class ConfigScreen extends Screen {
                         g.fill(r.x, r.y, r.x + r.w, r.y + r.h, 0x505555FF);
                     }
                     g.drawString(font, rowLabel(r), r.x + 4, r.y + 3, 0xDDDDDD);
+                }
+                drawPopupButton(g, px + 30, py + ph - 22, pw - 60, 18, "Cancel", isInRect(mx, my, px + 30, py + ph - 22, pw - 60, 18));
+                break;
+            }
+            case PICK_PRESET: {
+                for (int i = 0; i < presetRows.size(); i++) {
+                    int[] r = presetRows.get(i);
+                    if (isInRect(mx, my, r)) g.fill(r[0], r[1], r[0] + r[2], r[1] + r[3], 0x505555FF);
+                    g.drawString(font, popupPresets.get(i), r[0] + 4, r[1] + 3, 0xDDDDDD);
+                }
+                if (popupPresets.isEmpty()) {
+                    g.drawString(font, "(no presets exported yet)", px + 12, py + 40, 0x666666);
                 }
                 drawPopupButton(g, px + 30, py + ph - 22, pw - 60, 18, "Cancel", isInRect(mx, my, px + 30, py + ph - 22, pw - 60, 18));
                 break;
@@ -1287,9 +1462,9 @@ public class ConfigScreen extends Screen {
                 int sy;
                 switch (activeField) {
                     case 0: sy = contentTop + 16 + 2; break;
-                    case 2: sy = contentTop + 52 + 16 + 2; break;
-                    case 3: sy = contentTop + 78 + 16 + 2; break;
-                    case 4: sy = contentTop + 104 + 16 + 2; break;
+                    case 2: sy = contentTop + 60 + 16 + 2; break;
+                    case 3: sy = contentTop + 90 + 16 + 2; break;
+                    case 4: sy = contentTop + 120 + 16 + 2; break;
                     default: sy = -1; break;
                 }
                 if (sy >= 0) {
@@ -1329,6 +1504,13 @@ public class ConfigScreen extends Screen {
                         selListIndex = -1;
                         selGroupIndex = -1;
                         selItemIndex = -1;
+                    } else if (type == 3) {
+                        List<BackgroundPatterns.Pattern> pats = BackgroundPatterns.getAll();
+                        if (r[5] >= 0 && r[5] < pats.size()) {
+                            currentBackgroundPattern = pats.get(r[5]).id;
+                            statusMsg = "Pattern: " + pats.get(r[5]).displayName;
+                            statusColor = 0x55FF55;
+                        }
                     }
                     return true;
                 }
@@ -1474,6 +1656,18 @@ public class ConfigScreen extends Screen {
                 }
                 return true;
 
+            case PICK_PRESET:
+                for (int i = 0; i < presetRows.size(); i++) {
+                    if (isInRect(mx, my, presetRows.get(i))) {
+                        doImportPreset(popupPresets.get(i));
+                        return true;
+                    }
+                }
+                if (isInRect(mx, my, px + 30, py + ph - 22, pw - 60, 18)) {
+                    popup = Popup.NONE;
+                }
+                return true;
+
             default:
                 return true;
         }
@@ -1481,7 +1675,7 @@ public class ConfigScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mx, double my, double delta) {
-        if (popup == Popup.PICK_LIST || popup == Popup.PICK_GROUP) {
+        if (popup == Popup.PICK_LIST || popup == Popup.PICK_GROUP || popup == Popup.PICK_PRESET) {
             popupScroll = Math.max(0, popupScroll - (int) (delta * 12));
             return true;
         }

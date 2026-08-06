@@ -7,6 +7,7 @@ import com.scrowl.gradienttext.config.ConfiguredIntegration;
 import com.scrowl.gradienttext.gui.GradientMenu;
 import com.scrowl.gradienttext.handler.AnimationHandler;
 import com.scrowl.gradienttext.handler.GradientEventHandler;
+import com.scrowl.gradienttext.item.ModItems;
 import com.scrowl.gradienttext.network.NetworkHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -32,6 +33,7 @@ public class GradientTextMod {
         MinecraftForge.EVENT_BUS.register(GradientCommand.class);
 
         GradientMenu.register(modEventBus);
+        ModItems.register(modEventBus);
         NetworkHandler.register();
 
         ConfigManager.init();

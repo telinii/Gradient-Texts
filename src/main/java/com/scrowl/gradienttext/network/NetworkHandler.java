@@ -45,5 +45,21 @@ public class NetworkHandler {
                 OpenConfigScreenPacket::decode,
                 OpenConfigScreenPacket::handle
         );
+
+        CHANNEL.registerMessage(
+                nextId(),
+                WandApplyPacket.class,
+                WandApplyPacket::encode,
+                WandApplyPacket::decode,
+                WandApplyPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+                nextId(),
+                WandDepthApplyPacket.class,
+                WandDepthApplyPacket::encode,
+                WandDepthApplyPacket::decode,
+                WandDepthApplyPacket::handle
+        );
     }
 }

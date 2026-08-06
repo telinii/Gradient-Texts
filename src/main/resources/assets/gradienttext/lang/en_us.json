@@ -1,5 +1,7 @@
 {
   "itemGroup.gradienttext": "Gradient Text Plugin",
+  "item.gradienttext.gradient_wand": "Gradient Wand",
+  "item.gradienttext.depth_gradient_wand": "Gradient Depth Wand",
   "container.gradienttext.gradient": "Gradient Configuration",
   "commands.gradient.apply": "Gradient applied!",
   "commands.gradient.remove": "Gradient removed!",

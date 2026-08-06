@@ -12,7 +12,9 @@ public class GradientConfig {
     private boolean smoothGradient = true;
     private boolean defaultToolGradients = false;
     private boolean defaultArmorGradients = false;
+    private boolean defaultMaterialGradients = false;
     private String defaultGradientMode = "static";
+    private String backgroundPattern = "deepslate_vein";
     private Set<String> blacklistedItems = new HashSet<>();
     private List<GroupEntry> groups = new ArrayList<>();
     private List<ItemGradientEntry> unassigned = new ArrayList<>();
@@ -34,6 +36,25 @@ public class GradientConfig {
     public static final int[] DIAMOND_ARMOR_COLORS = new int[]{0x00CED1, 0x7FFFD4};
     public static final int[] NETHERITE_ARMOR_COLORS = new int[]{0x555555, 0x8B0000};
 
+    public static final Map<String, int[]> MATERIAL_DEFAULT_COLORS = java.util.Map.ofEntries(
+            java.util.Map.entry("minecraft:iron_ingot", new int[]{0xFFFFFF, 0x87CEEB}),
+            java.util.Map.entry("minecraft:gold_ingot", new int[]{0xFFD700, 0xFFA500}),
+            java.util.Map.entry("minecraft:copper_ingot", new int[]{0xE08A4C, 0xB35C37}),
+            java.util.Map.entry("minecraft:netherite_ingot", new int[]{0x555555, 0x8B0000}),
+            java.util.Map.entry("minecraft:diamond", new int[]{0x00FFFF, 0xADD8E6}),
+            java.util.Map.entry("minecraft:emerald", new int[]{0x2E8B57, 0x50C878}),
+            java.util.Map.entry("minecraft:lapis_lazuli", new int[]{0x4169E1, 0x7B9BF2}),
+            java.util.Map.entry("minecraft:redstone", new int[]{0xAA0000, 0xFF5555}),
+            java.util.Map.entry("minecraft:coal", new int[]{0x333333, 0x555555}),
+            java.util.Map.entry("minecraft:quartz", new int[]{0xD8D8D8, 0xFFFFFF}),
+            java.util.Map.entry("minecraft:amethyst_shard", new int[]{0x9966CC, 0xCC99FF})
+    );
+
+    public static int[] getMaterialDefaultColors(String rootId) {
+        if (rootId == null) return null;
+        return MATERIAL_DEFAULT_COLORS.get(rootId.toLowerCase());
+    }
+
     public static GradientConfig get() { return INSTANCE; }
     public static void set(GradientConfig config) { INSTANCE = config; }
 
@@ -46,8 +67,14 @@ public class GradientConfig {
     public boolean isDefaultArmorGradients() { return defaultArmorGradients; }
     public void setDefaultArmorGradients(boolean enabled) { this.defaultArmorGradients = enabled; }
 
+    public boolean isDefaultMaterialGradients() { return defaultMaterialGradients; }
+    public void setDefaultMaterialGradients(boolean enabled) { this.defaultMaterialGradients = enabled; }
+
     public String getDefaultGradientMode() { return defaultGradientMode; }
     public void setDefaultGradientMode(String mode) { this.defaultGradientMode = mode; }
+
+    public String getBackgroundPattern() { return backgroundPattern; }
+    public void setBackgroundPattern(String pattern) { this.backgroundPattern = pattern != null ? pattern : "deepslate_vein"; }
 
     public Set<String> getBlacklistedItems() { return blacklistedItems; }
     public void setBlacklistedItems(Set<String> items) { this.blacklistedItems = items; }
